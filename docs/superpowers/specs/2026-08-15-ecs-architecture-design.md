@@ -103,8 +103,9 @@ No base class, no registration decorators. The game layer owns the ordered array
 - **`input.ts`** — attaches `keydown`/`keyup` listeners to the window and exposes
   the set of currently pressed keys. Input is a single global source, so it travels
   through the system context rather than living in a component.
-- **`systems/input.ts`** — translates pressed keys into the player's velocity and
-  facing.
+- **`systems/player-input.ts`** — translates pressed keys into the player's velocity
+  and facing. Named for the player to keep it distinct from `input.ts`, which owns
+  the raw keyboard state.
 - **`systems/movement.ts`** — integrates `position += velocity * dt` and clamps to
   the canvas bounds.
 - **`systems/render.ts`** — clears the canvas, then draws every entity with
