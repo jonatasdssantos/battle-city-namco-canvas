@@ -20,10 +20,6 @@ Spec: `docs/superpowers/specs/2026-08-15-ecs-architecture-design.md`
 - No test framework. Every task verifies with `pnpm exec tsc`; tasks that change what's on screen also verify in the browser.
 - Canvas is 640×480. The player tank is 32×32 and moves in four directions, one axis at a time — no diagonals.
 
-## Working Tree Note
-
-The repo has pre-existing uncommitted changes made by the user before this plan: `src/counter.ts` deleted, `src/main.ts` and `src/style.css` modified. Each task below stages only its own listed paths. Task 5 modifies `src/main.ts` and `src/style.css`, so committing them will also carry the user's pre-existing edits to those two files — mention this to the user in that task rather than reverting anything. Leave the `src/counter.ts` deletion unstaged; it is not part of this plan.
-
 ---
 
 ### Task 1: ECS core — component registry, entity types, world
@@ -554,8 +550,6 @@ Run: `pnpm build`
 Expected: `tsc` passes and Vite reports a successful build with no errors.
 
 - [ ] **Step 8: Commit**
-
-Note for the implementer: `src/main.ts` and `src/style.css` already had uncommitted user edits before this plan started, so this commit includes them. Tell the user that in your report rather than trying to separate them.
 
 ```bash
 git add src/game.ts src/main.ts src/style.css index.html
