@@ -1,4 +1,4 @@
-import type { Components } from '../components.ts'
+import type { Components } from '../../components.ts'
 
 export type EntityId = number
 
