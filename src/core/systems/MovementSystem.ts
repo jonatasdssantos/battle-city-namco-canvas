@@ -4,16 +4,11 @@ import { PLAYER_ENTITY } from "../app";
 
 export class MovementSystem {
   execute(world: World) {
-    const player = world.getEntity(PLAYER_ENTITY)
-    
-    if (player) {
-      const position = world.getComponent(player, 'position')
-      const velocity = world.getComponent(player, 'velocity')
-      
-      position.x += velocity.x
-      position.y += velocity.y
+    const playerComponents = world.getComponents(PLAYER_ENTITY)
 
-      world.addComponent(player, { position })
-    }
+    playerComponents.position.x += playerComponents.velocity.x
+    playerComponents.position.y += playerComponents.velocity.y
+
+    world.addComponent(PLAYER_ENTITY, 'position', { x: playerComponents.position.x, y: playerComponents.position.y })
   }
 }

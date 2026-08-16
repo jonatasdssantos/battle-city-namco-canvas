@@ -1,36 +1,41 @@
-type Entity = number | string
+type EntityId = number | string
+type Entity = { id: EntityId, tags: string[] }
 
-type Components = Record<string, any>
+type Components = { entityId: EntityId, components: Record<string, any> }
 
 type System = { execute: (world: World) => void }
 
 export class World {
   
   declare entities: Entity[]
-  declare components: Components
+  declare components: Components[]
   declare systems: { id: string, system: System }[]
 
   constructor() {
     this.entities = []
-    this.components = {}
+    this.components = []
     this.systems = []
   }
 
   //#region Entity management
-  addEntity(entity: Entity) {
-    this.entities.push(entity)
+  addEntity(entityId: EntityId, tags?: string[]) {
+    this.entities.push({ id: entityId, tags: tags || [] })
   }
 
-  removeEntity(entity: Entity) {
-    this.entities = this.entities.filter(e => e !== entity)
+  removeEntity(entityId: EntityId) {
+    this.entities = this.entities.filter(e => e.id !== entityId)
   }
 
-  getEntity(entity: Entity) {
-    return this.entities.find(e => e === entity)
+  getEntity(entityId: EntityId) {
+    return this.entities.find(e => e.id === entityId)
   }
 
   getEntitiesByComponent<T>(component: string): T[] {
-    return this.entities.filter(e => this.components[e][component]).map(e => this.components[e][component])
+    return this.components.filter(c => c.components[component]).map(c => c.components[component])
+  }
+
+  getEntitiesByComponents<T>(components: string[]): T[] {
+    return this.components.filter(c => components.every(component => c.components[component])).map(c => c.components as T)
   }
 
   clearEntities() {
@@ -39,20 +44,38 @@ export class World {
   //#endregion
 
   //#region Component management
-  addComponent(entity: Entity, component: any) {
-    this.components[entity] = { ...this.components[entity], ...component }
+  addComponent(entityId: EntityId, componentId: string, value: any) {
+    const componentEntry = this.components.find(c => c.entityId === entityId)
+
+    if (componentEntry) {
+      componentEntry.components[componentId] = value
+    } else {
+      this.components.push({ entityId, components: { [componentId]: value } })
+    }
   }
 
-  removeComponent(entity: Entity, component: any) {
-    delete this.components[entity][component]
+  removeComponent(entityId: EntityId, componentId: string) {
+    const componentEntry = this.components.find(c => c.entityId === entityId)
+
+    if (componentEntry) {
+      delete componentEntry.components[componentId]
+    }
+
+    if (Object.keys(componentEntry.components).length === 0) {
+      this.components = this.components.filter(c => c.entityId !== entityId)
+    }
   }
 
-  getComponent(entity: Entity, component?: string) {
-    return component ? (component in this.components[entity] ? this.components[entity][component] : this.components[entity]) : this.components[entity]
+  getComponent(entityId: EntityId, componentId: string) {
+    return this.components.find(c => (c.entityId === entityId && c.components[componentId]))?.components[componentId]
+  }
+
+  getComponents(entityId: EntityId): Record<string, any> {
+    return this.components.find(c => c.entityId === entityId)?.components || {}
   }
 
   clearComponents() {
-    this.components = {}
+    this.components = []
   }
   //#endregion
 
