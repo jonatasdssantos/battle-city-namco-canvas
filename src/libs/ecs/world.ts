@@ -1,4 +1,4 @@
-type Entity = number
+type Entity = number | string
 
 type Components = Record<string, any>
 
@@ -24,6 +24,18 @@ export class World {
   removeEntity(entity: Entity) {
     this.entities = this.entities.filter(e => e !== entity)
   }
+
+  getEntity(entity: Entity) {
+    return this.entities.find(e => e === entity)
+  }
+
+  getEntitiesByComponent<T>(component: string): T[] {
+    return this.entities.filter(e => this.components[e][component]).map(e => this.components[e][component])
+  }
+
+  clearEntities() {
+    this.entities = []
+  }
   //#endregion
 
   //#region Component management
@@ -33,6 +45,14 @@ export class World {
 
   removeComponent(entity: Entity, component: any) {
     delete this.components[entity][component]
+  }
+
+  getComponent(entity: Entity, component?: string) {
+    return component ? (component in this.components[entity] ? this.components[entity][component] : this.components[entity]) : this.components[entity]
+  }
+
+  clearComponents() {
+    this.components = {}
   }
   //#endregion
 
@@ -44,9 +64,19 @@ export class World {
   removeSystem(id: string) {
     this.systems = this.systems.filter(system => system.id !== id)
   }
+
+  clearSystems() {
+    this.systems = []
+  }
   //#endregion
 
   update() {
     this.systems.forEach(({ id, system }) => system.execute(this))
+  }
+
+  clear() {
+    this.clearEntities()
+    this.clearComponents()
+    this.clearSystems()
   }
 }
