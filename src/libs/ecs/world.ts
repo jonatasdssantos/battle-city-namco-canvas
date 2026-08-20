@@ -18,8 +18,14 @@ export class World {
   }
 
   //#region Entity management
-  addEntity(entityId: EntityId, tags?: string[]) {
+  addEntity(entityId: EntityId, useAsPrefix?: boolean, tags?: string[]) {
+    if (useAsPrefix) {
+      entityId = `${entityId}-${crypto.randomUUID().slice(0, 8)}`
+    }
+
     this.entities.push({ id: entityId, tags: tags || [] })
+
+    return entityId
   }
 
   removeEntity(entityId: EntityId) {
@@ -44,13 +50,13 @@ export class World {
   //#endregion
 
   //#region Component management
-  addComponent(entityId: EntityId, componentId: string, value: any) {
+  addComponent(entityId: EntityId, componentId: string, value: object) {
     const componentEntry = this.components.find(c => c.entityId === entityId)
 
     if (componentEntry) {
-      componentEntry.components[componentId] = value
+      componentEntry.components[componentId] = { ...componentEntry.components[componentId], ...value }
     } else {
-      this.components.push({ entityId, components: { [componentId]: value } })
+      this.components.push({ entityId, components: { [componentId]: { ...value } } })
     }
   }
 
