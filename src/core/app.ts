@@ -1,26 +1,35 @@
 import { World } from "../libs/ecs/world";
 
 // Systems
-import { MovementSystem } from "./systems";
+import { 
+  MovementSystem, 
+  ProjectileSystem 
+} from "./systems";
 
 export const PLAYER_ENTITY = 'player_1'
 
 //*
 // Todo: implement components as struct data types, instead of playing with strings with objects
+// Todo: implement the entity handlers as a separate class, so we can easily add more entities to the world
 //  */
 
 export class App {
 
   declare isReady: boolean
   declare isRunning: boolean
+
+  declare $appEl: HTMLElement
   declare $playerEl: HTMLElement
+  declare $projectilesEl: HTMLElement[]
 
   world: World
 
   constructor() {
     this.init();
 
+    this.$appEl = document.getElementById('app') as HTMLElement
     this.$playerEl = document.getElementById('player-debug') as HTMLElement
+    this.$projectilesEl = []
 
     console.log(this)
   }
@@ -42,6 +51,7 @@ export class App {
     this.world = new World()
 
     this.world.addSystem('movement', new MovementSystem())
+    this.world.addSystem('projectile', new ProjectileSystem())
   }
 
   //#region Entity Initialization
@@ -50,9 +60,10 @@ export class App {
 
     this.world.addComponent(PLAYER_ENTITY, 'position', { x: 0, y: 0 })
     this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 0, y: 0 })
+    this.world.addComponent(PLAYER_ENTITY, 'direction', { x: 0, y: 0 })
     this.world.addComponent(PLAYER_ENTITY, 'health', { value: 100 })
-    this.world.addComponent(PLAYER_ENTITY, 'dimensions', { width: 10, height: 10 })
-    this.world.addComponent(PLAYER_ENTITY, 'bbox', { width: 10, height: 10 })
+    this.world.addComponent(PLAYER_ENTITY, 'dimensions', { width: 10, height: 10, depth: 0 })
+    this.world.addComponent(PLAYER_ENTITY, 'bbox', { width: 10, height: 10, depth: 0 })
   }
 
   initEnemyEntity() {
@@ -60,36 +71,44 @@ export class App {
 
     this.world.addComponent(enemyId, 'position', { x: 0, y: 0 })
     this.world.addComponent(enemyId, 'velocity', { x: 0, y: 0 })
+    this.world.addComponent(enemyId, 'direction', { x: 0, y: 0 })
     this.world.addComponent(enemyId, 'health', { value: 100 })
-    this.world.addComponent(enemyId, 'dimensions', { width: 10, height: 10 })
-    this.world.addComponent(enemyId, 'bbox', { width: 10, height: 10 })
+    this.world.addComponent(enemyId, 'dimensions', { width: 10, height: 10, depth: 0 })
+    this.world.addComponent(enemyId, 'bbox', { width: 10, height: 10, depth: 0 })
   }
 
   initWallEntity() {
     const wallId = this.world.addEntity('wall', true)
 
     this.world.addComponent(wallId, 'position', { x: 0, y: 0 })
-    this.world.addComponent(wallId, 'dimensions', { width: 10, height: 10 })
-    this.world.addComponent(wallId, 'bbox', { width: 10, height: 10 })
+    this.world.addComponent(wallId, 'dimensions', { width: 10, height: 10, depth: 0 })
+    this.world.addComponent(wallId, 'bbox', { width: 10, height: 10, depth: 0 })
   }
 
-  initProjectileEntity() {
+  initProjectileEntity( ownerEntityId: string ) {
     const projectileId = this.world.addEntity('projectile', true)
+    const ownerDirection = this.world.getComponent(ownerEntityId, 'direction')
 
     this.world.addComponent(projectileId, 'position', { x: 0, y: 0 })
-    this.world.addComponent(projectileId, 'velocity', { x: 0, y: 0 })
-    this.world.addComponent(projectileId, 'dimensions', { width: 10, height: 10 })
-    this.world.addComponent(projectileId, 'bbox', { width: 10, height: 10 })
+    this.world.addComponent(projectileId, 'velocity', { x: 5 * ownerDirection.x, y: 5 * ownerDirection.y })
+    this.world.addComponent(projectileId, 'direction', { x: ownerDirection.x, y: ownerDirection.y })
+    this.world.addComponent(projectileId, 'dimensions', { width: 10, height: 10, depth: 0 })
+    this.world.addComponent(projectileId, 'bbox', { width: 10, height: 10, depth: 0 })
     this.world.addComponent(projectileId, 'damage', { value: 10 })
-    this.world.addComponent(projectileId, 'owner', { value: PLAYER_ENTITY })
+    this.world.addComponent(projectileId, 'owner', { value: ownerEntityId })
+
+    console.log(projectileId)
+
+    // WIP
+    this.handleProjectileCreation(projectileId)
   }
 
   initPowerupEntity() {
     const powerupId = this.world.addEntity('powerup', true)
 
     this.world.addComponent(powerupId, 'position', { x: 0, y: 0 })
-    this.world.addComponent(powerupId, 'dimensions', { width: 10, height: 10 })
-    this.world.addComponent(powerupId, 'bbox', { width: 10, height: 10 })
+    this.world.addComponent(powerupId, 'dimensions', { width: 10, height: 10, depth: 0 })
+    this.world.addComponent(powerupId, 'bbox', { width: 10, height: 10, depth: 0 })
   }
   //#endregion
 
@@ -100,18 +119,25 @@ export class App {
   }
 
   keyDownHandler(event: KeyboardEvent) {
-    switch (event.key) {
+    switch (event.code) {
       case 'ArrowLeft':
         this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: -1, y: 0 })
+        this.world.addComponent(PLAYER_ENTITY, 'direction', { x: -1, y: 0 })
         break
       case 'ArrowRight':
         this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 1, y: 0 })
+        this.world.addComponent(PLAYER_ENTITY, 'direction', { x: 1, y: 0 })
         break
       case 'ArrowUp':
         this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 0, y: -1 })
+        this.world.addComponent(PLAYER_ENTITY, 'direction', { x: 0, y: -1 })
         break
       case 'ArrowDown':
         this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 0, y: 1 })
+        this.world.addComponent(PLAYER_ENTITY, 'direction', { x: 0, y: 1 })
+        break
+      case 'Space':
+        this.initProjectileEntity(PLAYER_ENTITY)
         break
     }
   }
@@ -134,6 +160,23 @@ export class App {
   }
   //#endregion
 
+  //#region Handlers
+  handleProjectileCreation(projectileId: string) {
+    const projectilePosition = this.world.getComponent(projectileId, 'position')
+    const projectileDimensions = this.world.getComponent(projectileId, 'dimensions')
+
+    const $projectileEl = document.createElement('div')
+    $projectileEl.id = projectileId
+    $projectileEl.className = 'projectile'
+    $projectileEl.style.transform = `translate3d(${projectilePosition.x}px, ${projectilePosition.y}px, 0)`
+    $projectileEl.style.width = `${projectileDimensions.width}px`
+    $projectileEl.style.height = `${projectileDimensions.height}px`
+  
+    this.$appEl.appendChild($projectileEl)
+    this.$projectilesEl.push($projectileEl)
+  }
+  //#endregion
+
   start() {
     this.isRunning = true
   }
@@ -149,6 +192,12 @@ export class App {
       // Update Player Debug
       const playerPosition = this.world.getComponent(PLAYER_ENTITY, 'position')
       this.$playerEl.style.transform = `translate3d(${playerPosition.x}px, ${playerPosition.y}px, 0)`
+
+      // Update Projectiles
+      this.$projectilesEl.forEach(projectileEl => {
+        const projectilePosition = this.world.getComponent(projectileEl.id, 'position')
+        projectileEl.style.transform = `translate3d(${projectilePosition.x}px, ${projectilePosition.y}px, 0)`
+      })
     }
   }
 }

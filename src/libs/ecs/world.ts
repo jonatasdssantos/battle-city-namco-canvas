@@ -1,4 +1,4 @@
-type EntityId = number | string
+type EntityId = string
 type Entity = { id: EntityId, tags: string[] }
 
 type Components = { entityId: EntityId, components: Record<string, any> }
@@ -18,7 +18,7 @@ export class World {
   }
 
   //#region Entity management
-  addEntity(entityId: EntityId, useAsPrefix?: boolean, tags?: string[]) {
+  addEntity(entityId: string, useAsPrefix?: boolean, tags?: string[]) {
     if (useAsPrefix) {
       entityId = `${entityId}-${crypto.randomUUID().slice(0, 8)}`
     }
@@ -50,14 +50,20 @@ export class World {
   //#endregion
 
   //#region Component management
-  addComponent(entityId: EntityId, componentId: string, value: object) {
+  addComponent(entityId: EntityId, componentId: string, value: object): any {
+    let component;
+
     const componentEntry = this.components.find(c => c.entityId === entityId)
 
     if (componentEntry) {
       componentEntry.components[componentId] = { ...componentEntry.components[componentId], ...value }
+      component = componentEntry.components[componentId]
     } else {
       this.components.push({ entityId, components: { [componentId]: { ...value } } })
+      component = this.components[this.components.length - 1].components[componentId]
     }
+
+    return component
   }
 
   removeComponent(entityId: EntityId, componentId: string) {
@@ -76,8 +82,8 @@ export class World {
     return this.components.find(c => (c.entityId === entityId && c.components[componentId]))?.components[componentId]
   }
 
-  getComponents(entityId: EntityId): Record<string, any> {
-    return this.components.find(c => c.entityId === entityId)?.components || {}
+  getComponents(entityId: EntityId, exactMatch: boolean = true): Record<string, any> {
+    return this.components.find(c => exactMatch ? c.entityId === entityId : c.entityId.startsWith(entityId))?.components || {}
   }
 
   clearComponents() {
