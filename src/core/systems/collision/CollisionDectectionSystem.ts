@@ -2,7 +2,7 @@
 
 import { World } from "../../../libs/ecs/world"
 
-import { CollisionPlayerResolver } from "./CollisionPlayerResolver"
+import { CollisionPlayerResolver, type CollidableComponents } from "./CollisionPlayerResolver"
 import { CollisionEnemyResolver } from "./CollisionEnemyResolver"
 import { CollisionProjectileResolver } from "./CollisionProjectileResolver"
 import { CollisionPowerUpResolver } from "./CollisionPowerUpResolver"
@@ -51,7 +51,11 @@ export class CollisionDetectionSystem {
 
         if (isColliding) {
           if (collidable.tags.includes('player')) {
-            CollisionPlayerResolver.resolve(collidableComponent, otherCollidableComponent)
+            CollisionPlayerResolver.resolve(
+              collidableComponent as CollidableComponents,
+              otherCollidableComponent as CollidableComponents,
+              otherCollidable.tags
+            )
           }
 
           if (collidable.tags.includes('enemy')) {
