@@ -2,16 +2,19 @@ import type { World } from "../../libs/ecs/world"
 
 export class ProjectileSystem {
   execute(world: World) {
-    const projectiles = world.getComponents('projectile', false)
+    const projectiles = world.getEntitiesByTag('projectile')
 
-    // TODO: Get a list of all projectile entities and update their position
+    projectiles.forEach(projectile => {
+      const projectileComponent = world.getComponents(projectile.id)
+      
+      const position = projectileComponent.position
+      const direction = projectileComponent.direction
+      const velocity = projectileComponent.velocity
 
-    // console.log(projectiles)
-    // projectiles.forEach(projectile => {
-    //   projectile.position.x += projectile.velocity.x
-    //   projectile.position.y += projectile.velocity.y
+      position.x += direction.x * velocity.x
+      position.y += direction.y * velocity.y
 
-    //   world.addComponent(projectile.id, 'position', { x: projectile.position.x, y: projectile.position.y })
-    // })
+      world.addComponent(projectile.id, 'position', position)
+    })
   }
 }

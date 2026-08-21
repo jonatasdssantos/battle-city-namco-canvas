@@ -86,18 +86,24 @@ export class App {
   }
 
   initProjectileEntity( ownerEntityId: string ) {
-    const projectileId = this.world.addEntity('projectile', true)
+    const projectileId = this.world.addEntity('projectile', true, ['projectile'])
+    
     const ownerDirection = this.world.getComponent(ownerEntityId, 'direction')
+    const ownerPosition = this.world.getComponent(ownerEntityId, 'position')
+    const ownerDimensions = this.world.getComponent(ownerEntityId, 'dimensions')
 
-    this.world.addComponent(projectileId, 'position', { x: 0, y: 0 })
-    this.world.addComponent(projectileId, 'velocity', { x: 5 * ownerDirection.x, y: 5 * ownerDirection.y })
+    const dimensions = { width: 10, height: 10, depth: 0 }
+
+    const middlePosX = (ownerDimensions.width / 2) + (dimensions.width / 2)
+    const middlePosY = (ownerDimensions.height / 2) + (dimensions.height / 2)
+
+    this.world.addComponent(projectileId, 'position', { x: ownerPosition.x + middlePosX, y: ownerPosition.y + middlePosY })
+    this.world.addComponent(projectileId, 'velocity', { x: 5, y: 5 })
     this.world.addComponent(projectileId, 'direction', { x: ownerDirection.x, y: ownerDirection.y })
-    this.world.addComponent(projectileId, 'dimensions', { width: 10, height: 10, depth: 0 })
-    this.world.addComponent(projectileId, 'bbox', { width: 10, height: 10, depth: 0 })
+    this.world.addComponent(projectileId, 'dimensions', dimensions)
+    this.world.addComponent(projectileId, 'bbox', dimensions)
     this.world.addComponent(projectileId, 'damage', { value: 10 })
     this.world.addComponent(projectileId, 'owner', { value: ownerEntityId })
-
-    console.log(projectileId)
 
     // WIP
     this.handleProjectileCreation(projectileId)

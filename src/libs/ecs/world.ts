@@ -36,6 +36,10 @@ export class World {
     return this.entities.find(e => e.id === entityId)
   }
 
+  getEntitiesByTag(tag: string) {
+    return this.entities.filter(e => e.tags.includes(tag))
+  }
+
   getEntitiesByComponent<T>(component: string): T[] {
     return this.components.filter(c => c.components[component]).map(c => c.components[component])
   }
