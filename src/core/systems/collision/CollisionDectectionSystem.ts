@@ -2,6 +2,11 @@
 
 import { World } from "../../../libs/ecs/world"
 
+import { CollisionPlayerResolver } from "./CollisionPlayerResolver"
+import { CollisionEnemyResolver } from "./CollisionEnemyResolver"
+import { CollisionProjectileResolver } from "./CollisionProjectileResolver"
+import { CollisionPowerUpResolver } from "./CollisionPowerUpResolver"
+
 export class CollisionDetectionSystem {
 
   static isColliding(collidable: { position: { x: number, y: number }, dimensions: { width: number, height: number } }, otherCollidable: { position: { x: number, y: number }, dimensions: { width: number, height: number } }) {
@@ -45,7 +50,21 @@ export class CollisionDetectionSystem {
         )
 
         if (isColliding) {
-          console.log('Collision detected')
+          if (collidable.tags.includes('player')) {
+            CollisionPlayerResolver.resolve(collidableComponent, otherCollidableComponent)
+          }
+
+          if (collidable.tags.includes('enemy')) {
+            CollisionEnemyResolver.resolve(collidableComponent, otherCollidableComponent)
+          }
+
+          if (collidable.tags.includes('projectile')) {
+            CollisionProjectileResolver.resolve(collidableComponent, otherCollidableComponent)
+          }
+
+          if (collidable.tags.includes('powerup')) {
+            CollisionPowerUpResolver.resolve(collidableComponent, otherCollidableComponent)
+          }
         }
       })
     })
