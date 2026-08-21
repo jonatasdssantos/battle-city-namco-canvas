@@ -3,8 +3,10 @@ import { World } from "../libs/ecs/world";
 // Systems
 import { 
   MovementSystem, 
-  ProjectileSystem 
-} from "./systems";
+  ProjectileSystem,
+  CollisionDetectionSystem
+} from './systems';
+
 
 export const PLAYER_ENTITY = 'player_1'
 
@@ -21,15 +23,22 @@ export class App {
   declare $appEl: HTMLElement
   declare $playerEl: HTMLElement
   declare $projectilesEl: HTMLElement[]
-
+  declare $wallsEl: HTMLElement[]
+  declare $enemiesEl: HTMLElement[]
+  declare $powerupsEl: HTMLElement[]
+  
   world: World
 
   constructor() {
-    this.init();
-
     this.$appEl = document.getElementById('app') as HTMLElement
     this.$playerEl = document.getElementById('player-debug') as HTMLElement
+    
     this.$projectilesEl = []
+    this.$wallsEl = []
+    this.$enemiesEl = []
+    this.$powerupsEl = []
+
+    this.init();
 
     console.log(this)
   }
@@ -40,6 +49,8 @@ export class App {
     
     // Init Entities
     this.initPlayerEntity()
+
+    this.initWallEntity({ x: window.innerWidth / 2, y: window.innerHeight / 2 }, { width: 100, height: 100, depth: 0 })
     
     // Init Keyboard Handlers
     this.initKeyboardHandlers()
@@ -52,11 +63,12 @@ export class App {
 
     this.world.addSystem('movement', new MovementSystem())
     this.world.addSystem('projectile', new ProjectileSystem())
+    this.world.addSystem('collision', new CollisionDetectionSystem())
   }
 
   //#region Entity Initialization
   initPlayerEntity() {
-    this.world.addEntity(PLAYER_ENTITY)
+    this.world.addEntity(PLAYER_ENTITY, false, ['player', 'movable', 'collidable'])
 
     this.world.addComponent(PLAYER_ENTITY, 'position', { x: 0, y: 0 })
     this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 0, y: 0 })
@@ -67,7 +79,7 @@ export class App {
   }
 
   initEnemyEntity() {
-    const enemyId = this.world.addEntity('enemy', true)
+    const enemyId = this.world.addEntity('enemy', true, ['enemy', 'movable', 'collidable'])
 
     this.world.addComponent(enemyId, 'position', { x: 0, y: 0 })
     this.world.addComponent(enemyId, 'velocity', { x: 0, y: 0 })
@@ -77,16 +89,19 @@ export class App {
     this.world.addComponent(enemyId, 'bbox', { width: 10, height: 10, depth: 0 })
   }
 
-  initWallEntity() {
-    const wallId = this.world.addEntity('wall', true)
+  initWallEntity(position: { x: number, y: number }, dimensions: { width: number, height: number, depth: number }) {
+    const wallId = this.world.addEntity('wall', true, ['wall', 'static', 'collidable'])
 
-    this.world.addComponent(wallId, 'position', { x: 0, y: 0 })
-    this.world.addComponent(wallId, 'dimensions', { width: 10, height: 10, depth: 0 })
-    this.world.addComponent(wallId, 'bbox', { width: 10, height: 10, depth: 0 })
+    this.world.addComponent(wallId, 'position', position)
+    this.world.addComponent(wallId, 'dimensions', dimensions)
+    this.world.addComponent(wallId, 'bbox', dimensions)
+
+    // WIP
+    this.handleWallCreation(wallId)
   }
 
   initProjectileEntity( ownerEntityId: string ) {
-    const projectileId = this.world.addEntity('projectile', true, ['projectile'])
+    const projectileId = this.world.addEntity('projectile', true, ['projectile', 'movable', 'collidable'])
     
     const ownerDirection = this.world.getComponent(ownerEntityId, 'direction')
     const ownerPosition = this.world.getComponent(ownerEntityId, 'position')
@@ -110,7 +125,7 @@ export class App {
   }
 
   initPowerupEntity() {
-    const powerupId = this.world.addEntity('powerup', true)
+    const powerupId = this.world.addEntity('powerup', true, ['powerup', 'static', 'collidable'])
 
     this.world.addComponent(powerupId, 'position', { x: 0, y: 0 })
     this.world.addComponent(powerupId, 'dimensions', { width: 10, height: 10, depth: 0 })
@@ -127,20 +142,20 @@ export class App {
   keyDownHandler(event: KeyboardEvent) {
     switch (event.code) {
       case 'ArrowLeft':
-        this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: -1, y: 0 })
-        this.world.addComponent(PLAYER_ENTITY, 'direction', { x: -1, y: 0 })
+        this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: -3, y: 0 })
+        this.world.addComponent(PLAYER_ENTITY, 'direction', { x: -3, y: 0 })
         break
       case 'ArrowRight':
-        this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 1, y: 0 })
-        this.world.addComponent(PLAYER_ENTITY, 'direction', { x: 1, y: 0 })
+        this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 3, y: 0 })
+        this.world.addComponent(PLAYER_ENTITY, 'direction', { x: 3, y: 0 })
         break
       case 'ArrowUp':
-        this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 0, y: -1 })
-        this.world.addComponent(PLAYER_ENTITY, 'direction', { x: 0, y: -1 })
+        this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 0, y: -3 })
+        this.world.addComponent(PLAYER_ENTITY, 'direction', { x: 0, y: -3 })
         break
       case 'ArrowDown':
-        this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 0, y: 1 })
-        this.world.addComponent(PLAYER_ENTITY, 'direction', { x: 0, y: 1 })
+        this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 0, y: 3 })
+        this.world.addComponent(PLAYER_ENTITY, 'direction', { x: 0, y: 3 })
         break
       case 'Space':
         this.initProjectileEntity(PLAYER_ENTITY)
@@ -180,6 +195,21 @@ export class App {
   
     this.$appEl.appendChild($projectileEl)
     this.$projectilesEl.push($projectileEl)
+  }
+
+  handleWallCreation(wallId: string) {
+    const wallPosition = this.world.getComponent(wallId, 'position')
+    const wallDimensions = this.world.getComponent(wallId, 'dimensions')
+
+    const $wallEl = document.createElement('div')
+    $wallEl.id = wallId
+    $wallEl.className = 'wall'
+    $wallEl.style.transform = `translate3d(${wallPosition.x}px, ${wallPosition.y}px, 0)`
+    $wallEl.style.width = `${wallDimensions.width}px`
+    $wallEl.style.height = `${wallDimensions.height}px`
+
+    this.$appEl.appendChild($wallEl)
+    this.$wallsEl.push($wallEl)
   }
   //#endregion
 
