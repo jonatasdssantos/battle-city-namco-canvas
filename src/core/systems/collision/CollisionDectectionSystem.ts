@@ -5,10 +5,16 @@ import { World } from "../../../libs/ecs/world"
 export class CollisionDetectionSystem {
 
   static isColliding(collidable: { position: { x: number, y: number }, dimensions: { width: number, height: number } }, otherCollidable: { position: { x: number, y: number }, dimensions: { width: number, height: number } }) {
-    return collidable.position.x < otherCollidable.position.x + otherCollidable.dimensions.width &&
-      collidable.position.x + collidable.dimensions.width > otherCollidable.position.x &&
-      collidable.position.y < otherCollidable.position.y + otherCollidable.dimensions.height &&
-      collidable.position.y + collidable.dimensions.height > otherCollidable.position.y
+    const collidableX = collidable.position.x + collidable.dimensions.width
+    const collidableY = collidable.position.y + collidable.dimensions.height
+    
+    const otherCollidableX = otherCollidable.position.x + otherCollidable.dimensions.width
+    const otherCollidableY = otherCollidable.position.y + otherCollidable.dimensions.height
+    
+    return collidable.position.x < otherCollidableX &&
+      collidableX > otherCollidable.position.x &&
+      collidable.position.y < otherCollidableY &&
+      collidableY > otherCollidable.position.y
   }
 
   execute(world: World) {
