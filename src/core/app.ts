@@ -2,6 +2,7 @@ import { World } from "../libs/ecs/world";
 
 // Systems
 import { 
+  EnemiesAISystem,
   MovementSystem, 
   ProjectileSystem,
   CollisionDetectionSystem
@@ -30,7 +31,7 @@ export class App {
   declare windowMidWidth: number
   declare windowMidHeight: number
   
-  world: World
+  declare world: World
 
   constructor() {
     this.$appEl = document.getElementById('app') as HTMLElement
@@ -60,6 +61,10 @@ export class App {
     this.initWallEntity({ x: this.windowMidWidth, y: 50 }, { width: 50, height: 50, depth: 0 })
     this.initWallEntity({ x: this.windowMidWidth + 200, y: this.windowMidHeight - 150 }, { width: 50, height: 350, depth: 0 })
     this.initWallEntity({ x: this.windowMidWidth - 300, y: this.windowMidHeight }, { width: 100, height: 100, depth: 0 })
+
+    this.initEnemyEntity({ x: this.windowMidWidth * 0.5, y: this.windowMidHeight * 0.2 })
+    this.initEnemyEntity({ x: this.windowMidWidth * 1.5, y: this.windowMidHeight * 1.4 })
+    this.initEnemyEntity({ x: this.windowMidWidth * 0.3, y: this.windowMidHeight * 1.5 })
     
     // Init Keyboard Handlers
     this.initKeyboardHandlers()
@@ -70,6 +75,7 @@ export class App {
   initWorld() {
     this.world = new World()
 
+    this.world.addSystem('enemiesAI', new EnemiesAISystem())
     this.world.addSystem('movement', new MovementSystem())
     this.world.addSystem('projectile', new ProjectileSystem())
     this.world.addSystem('collision', new CollisionDetectionSystem())
@@ -87,15 +93,18 @@ export class App {
     this.world.addComponent(PLAYER_ENTITY, 'bbox', { width: 25, height: 25, depth: 0 })
   }
 
-  initEnemyEntity() {
+  initEnemyEntity(position: { x: number, y: number }) {
     const enemyId = this.world.addEntity('enemy', true, ['enemy', 'movable', 'collidable'])
 
-    this.world.addComponent(enemyId, 'position', { x: 0, y: 0 })
+    this.world.addComponent(enemyId, 'position', position)
     this.world.addComponent(enemyId, 'velocity', { x: 0, y: 0 })
     this.world.addComponent(enemyId, 'direction', { x: 0, y: 0 })
     this.world.addComponent(enemyId, 'health', { value: 100 })
-    this.world.addComponent(enemyId, 'dimensions', { width: 10, height: 10, depth: 0 })
-    this.world.addComponent(enemyId, 'bbox', { width: 10, height: 10, depth: 0 })
+    this.world.addComponent(enemyId, 'dimensions', { width: 20, height: 20, depth: 0 })
+    this.world.addComponent(enemyId, 'bbox', { width: 20, height: 20, depth: 0 })
+
+    // WIP
+    this.handleEnemyCreation(enemyId)
   }
 
   initWallEntity(position: { x: number, y: number }, dimensions: { width: number, height: number, depth: number }) {
@@ -220,6 +229,44 @@ export class App {
     this.$appEl.appendChild($wallEl)
     this.$wallsEl.push($wallEl)
   }
+
+  handleEnemyCreation(enemyId: string) {
+    const enemyPosition = this.world.getComponent(enemyId, 'position')
+    const enemyDimensions = this.world.getComponent(enemyId, 'dimensions')
+
+    const $enemyEl = document.createElement('div')
+    $enemyEl.id = enemyId
+    $enemyEl.className = 'enemy'
+    $enemyEl.style.transform = `translate3d(${enemyPosition.x}px, ${enemyPosition.y}px, 0)`
+    $enemyEl.style.width = `${enemyDimensions.width}px`
+    $enemyEl.style.height = `${enemyDimensions.height}px`
+
+    this.$appEl.appendChild($enemyEl)
+    this.$enemiesEl.push($enemyEl)
+  }
+
+  handleEnemyShooting() {
+    this.world.getEntitiesByTag('enemy').forEach(enemy => {
+      const shooting = this.world.getComponent(enemy.id, 'shooting')
+
+      if (!shooting?.requested) return
+
+      this.initProjectileEntity(enemy.id)
+
+      shooting.requested = false
+    })
+  }
+
+  handleExpiredProjectiles() {
+    this.$projectilesEl = this.$projectilesEl.filter($projectileEl => {
+      if (!this.world.getComponent($projectileEl.id, 'expired')) return true
+
+      $projectileEl.remove()
+      this.world.removeEntity($projectileEl.id)
+
+      return false
+    })
+  }
   //#endregion
 
   start() {
@@ -238,11 +285,20 @@ export class App {
       const playerPosition = this.world.getComponent(PLAYER_ENTITY, 'position')
       this.$playerEl.style.transform = `translate3d(${playerPosition.x}px, ${playerPosition.y}px, 0)`
 
+      // Update Enemies
+      this.$enemiesEl.forEach(enemyEl => {
+        const enemyPosition = this.world.getComponent(enemyEl.id, 'position')
+        enemyEl.style.transform = `translate3d(${enemyPosition.x}px, ${enemyPosition.y}px, 0)`
+      })
+
       // Update Projectiles
       this.$projectilesEl.forEach(projectileEl => {
         const projectilePosition = this.world.getComponent(projectileEl.id, 'position')
         projectileEl.style.transform = `translate3d(${projectilePosition.x}px, ${projectilePosition.y}px, 0)`
       })
+
+      this.handleEnemyShooting()
+      this.handleExpiredProjectiles()
     }
   }
 }

@@ -1,14 +1,19 @@
 import type { World } from "../../libs/ecs/world";
 
-import { PLAYER_ENTITY } from "../app";
-
 export class MovementSystem {
   execute(world: World) {
-    const playerComponents = world.getComponents(PLAYER_ENTITY)
+    const movables = world.getEntitiesByTag('movable')
 
-    playerComponents.position.x += playerComponents.velocity.x
-    playerComponents.position.y += playerComponents.velocity.y
+    movables.forEach(movable => {
+      // Projectiles integrate direction * velocity in the ProjectileSystem instead
+      if (movable.tags.includes('projectile')) return
 
-    world.addComponent(PLAYER_ENTITY, 'position', { x: playerComponents.position.x, y: playerComponents.position.y })
+      const { position, velocity } = world.getComponents(movable.id)
+
+      position.x += velocity.x
+      position.y += velocity.y
+
+      world.addComponent(movable.id, 'position', position)
+    })
   }
 }

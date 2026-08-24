@@ -1,5 +1,7 @@
 import type { World } from "../../libs/ecs/world"
 
+import { isInsideViewport } from "../viewport"
+
 export class ProjectileSystem {
   execute(world: World) {
     const projectiles = world.getEntitiesByTag('projectile')
@@ -15,6 +17,10 @@ export class ProjectileSystem {
       position.y += direction.y * velocity.y
 
       world.addComponent(projectile.id, 'position', position)
+
+      if (!isInsideViewport(position, projectileComponent.dimensions)) {
+        world.addComponent(projectile.id, 'expired', { value: true })
+      }
     })
   }
 }

@@ -30,6 +30,7 @@ export class World {
 
   removeEntity(entityId: EntityId) {
     this.entities = this.entities.filter(e => e.id !== entityId)
+    this.components = this.components.filter(c => c.entityId !== entityId)
   }
 
   getEntity(entityId: EntityId) {
@@ -73,9 +74,9 @@ export class World {
   removeComponent(entityId: EntityId, componentId: string) {
     const componentEntry = this.components.find(c => c.entityId === entityId)
 
-    if (componentEntry) {
-      delete componentEntry.components[componentId]
-    }
+    if (!componentEntry) return
+
+    delete componentEntry.components[componentId]
 
     if (Object.keys(componentEntry.components).length === 0) {
       this.components = this.components.filter(c => c.entityId !== entityId)
@@ -110,7 +111,7 @@ export class World {
   //#endregion
 
   update() {
-    this.systems.forEach(({ id, system }) => system.execute(this))
+    this.systems.forEach(({ system }) => system.execute(this))
   }
 
   clear() {

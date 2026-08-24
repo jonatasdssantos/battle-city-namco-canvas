@@ -2,10 +2,11 @@
 
 import { World } from "../../../libs/ecs/world"
 
-import { CollisionPlayerResolver, type CollidableComponents } from "./CollisionPlayerResolver"
+import { CollisionPlayerResolver } from "./CollisionPlayerResolver"
 import { CollisionEnemyResolver } from "./CollisionEnemyResolver"
 import { CollisionProjectileResolver } from "./CollisionProjectileResolver"
 import { CollisionPowerUpResolver } from "./CollisionPowerUpResolver"
+import type { CollidableComponents } from "./wallSeparation"
 
 export class CollisionDetectionSystem {
 
@@ -59,15 +60,25 @@ export class CollisionDetectionSystem {
           }
 
           if (collidable.tags.includes('enemy')) {
-            CollisionEnemyResolver.resolve(collidableComponent, otherCollidableComponent)
+            CollisionEnemyResolver.resolve(
+              collidableComponent as CollidableComponents,
+              otherCollidableComponent as CollidableComponents,
+              otherCollidable.tags
+            )
           }
 
           if (collidable.tags.includes('projectile')) {
-            CollisionProjectileResolver.resolve(collidableComponent, otherCollidableComponent)
+            CollisionProjectileResolver.resolve(
+              collidableComponent as CollidableComponents,
+              otherCollidableComponent as CollidableComponents
+            )
           }
 
           if (collidable.tags.includes('powerup')) {
-            CollisionPowerUpResolver.resolve(collidableComponent, otherCollidableComponent)
+            CollisionPowerUpResolver.resolve(
+              collidableComponent as CollidableComponents,
+              otherCollidableComponent as CollidableComponents
+            )
           }
         }
       })

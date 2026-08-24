@@ -77,6 +77,12 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 50%;
 }
 
+.enemy {
+  position: absolute;
+  background-color: darkorange;
+  border-radius: 20%;
+}
+
 .wall {
   position: absolute;
   background-color: gray;

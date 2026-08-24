@@ -1,5 +1,13 @@
+import { separateFromWall, type CollidableComponents } from "./wallSeparation"
+
 export class CollisionEnemyResolver {
-  static resolve(playerComponent: { position: { x: number, y: number }, dimensions: { width: number, height: number } }, otherCollidableComponent: { position: { x: number, y: number }, dimensions: { width: number, height: number } }) {
-    
+  static resolve(
+    enemyComponent: CollidableComponents,
+    otherCollidableComponent: CollidableComponents,
+    otherTags: string[] = []
+  ) {
+    if (!otherTags.includes('wall')) return
+
+    separateFromWall(enemyComponent, otherCollidableComponent)
   }
 }
