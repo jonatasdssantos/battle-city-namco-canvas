@@ -74,8 +74,8 @@ export class App {
     this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 0, y: 0 })
     this.world.addComponent(PLAYER_ENTITY, 'direction', { x: 0, y: 0 })
     this.world.addComponent(PLAYER_ENTITY, 'health', { value: 100 })
-    this.world.addComponent(PLAYER_ENTITY, 'dimensions', { width: 10, height: 10, depth: 0 })
-    this.world.addComponent(PLAYER_ENTITY, 'bbox', { width: 10, height: 10, depth: 0 })
+    this.world.addComponent(PLAYER_ENTITY, 'dimensions', { width: 25, height: 25, depth: 0 })
+    this.world.addComponent(PLAYER_ENTITY, 'bbox', { width: 25, height: 25, depth: 0 })
   }
 
   initEnemyEntity() {
