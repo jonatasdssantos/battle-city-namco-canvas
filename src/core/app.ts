@@ -26,6 +26,9 @@ export class App {
   declare $wallsEl: HTMLElement[]
   declare $enemiesEl: HTMLElement[]
   declare $powerupsEl: HTMLElement[]
+
+  declare windowMidWidth: number
+  declare windowMidHeight: number
   
   world: World
 
@@ -37,6 +40,9 @@ export class App {
     this.$wallsEl = []
     this.$enemiesEl = []
     this.$powerupsEl = []
+
+    this.windowMidWidth = window.innerWidth / 2
+    this.windowMidHeight = window.innerHeight / 2
 
     this.init();
 
@@ -50,7 +56,10 @@ export class App {
     // Init Entities
     this.initPlayerEntity()
 
-    this.initWallEntity({ x: window.innerWidth / 2, y: window.innerHeight / 2 }, { width: 100, height: 100, depth: 0 })
+    this.initWallEntity({ x: this.windowMidWidth, y: this.windowMidHeight }, { width: 100, height: 100, depth: 0 })
+    this.initWallEntity({ x: this.windowMidWidth, y: 50 }, { width: 50, height: 50, depth: 0 })
+    this.initWallEntity({ x: this.windowMidWidth + 200, y: this.windowMidHeight - 150 }, { width: 50, height: 350, depth: 0 })
+    this.initWallEntity({ x: this.windowMidWidth - 300, y: this.windowMidHeight }, { width: 100, height: 100, depth: 0 })
     
     // Init Keyboard Handlers
     this.initKeyboardHandlers()
