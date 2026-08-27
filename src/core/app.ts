@@ -286,12 +286,14 @@ export class App {
   observeEnemyDeathHandler(event: EmitterEvents['enemy.death']) {
     console.log('enemy death', event)
 
+    this.$enemiesEl.find($enemyEl => $enemyEl.id === event.enemyId)?.remove()
     this.$enemiesEl = this.$enemiesEl.filter($enemyEl => $enemyEl.id !== event.enemyId)
   }
 
   observeProjectileHitHandler(event: EmitterEvents['projectile.hit']) {
     console.log('projectile hit', event)
 
+    this.$projectilesEl.find($projectileEl => $projectileEl.id === event.projectileId)?.remove()
     this.$projectilesEl = this.$projectilesEl.filter($projectileEl => $projectileEl.id !== event.projectileId)
   }
 
