@@ -29,11 +29,16 @@ export class CollisionProjectileResolver {
     }
 
     if (otherTags.includes('player')) {
-      // world?.removeEntity(_projectileComponent.entityId)
+      Emitter.emit('player.hit', { playerId: otherCollidableId.toString() })
+      Emitter.emit('projectile.hit', { projectileId: projectileId.toString(), targetId: otherCollidableId.toString() })
     }
 
     if (otherTags.includes('wall')) {
-      // world?.removeEntity(_projectileComponent.entityId)
+      world?.removeComponent(projectileId.toString(), 'collidable')
+
+      world?.removeEntity(projectileId.toString())
+
+      Emitter.emit('projectile.hit', { projectileId: projectileId.toString(), targetId: otherCollidableId.toString() })
     }
   }
 }

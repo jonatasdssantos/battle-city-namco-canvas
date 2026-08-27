@@ -18,10 +18,19 @@ export const PLAYER_ENTITY = 'player_1'
 //  */
 
 export type EmitterEvents = {
-  'enemy.death': { enemyId: string },
-  'projectile.hit': { projectileId: string, targetId: string },
   'player.death': { playerId: string },
-  'powerup.death': { powerupId: string }
+  'player.hit': { playerId: string },
+  'player.spawn': { playerId: string },
+
+  'enemy.spawn': { enemyId: string },
+  'enemy.hit': { enemyId: string },
+  'enemy.death': { enemyId: string },
+
+  'projectile.spawn': { projectileId: string },
+  'projectile.hit': { projectileId: string, targetId: string },
+
+  'powerup.spawn': { powerupId: string },
+  'powerup.hit': { powerupId: string }
 }
 
 export const Emitter = mitt<EmitterEvents>()
