@@ -1,4 +1,5 @@
 import { World } from "../libs/ecs/world";
+import mitt from "../libs/emitter";
 
 // Systems
 import { 
@@ -15,6 +16,15 @@ export const PLAYER_ENTITY = 'player_1'
 // Todo: implement components as struct data types, instead of playing with strings with objects
 // Todo: implement the entity handlers as a separate class, so we can easily add more entities to the world
 //  */
+
+export type EmitterEvents = {
+  'enemy.death': { enemyId: string },
+  'projectile.hit': { projectileId: string, targetId: string },
+  'player.death': { playerId: string },
+  'powerup.death': { powerupId: string }
+}
+
+export const Emitter = mitt<EmitterEvents>()
 
 export class App {
 
@@ -65,10 +75,17 @@ export class App {
     this.initEnemyEntity({ x: this.windowMidWidth * 0.5, y: this.windowMidHeight * 0.2 })
     this.initEnemyEntity({ x: this.windowMidWidth * 1.5, y: this.windowMidHeight * 1.4 })
     this.initEnemyEntity({ x: this.windowMidWidth * 0.3, y: this.windowMidHeight * 1.5 })
+    this.initEnemyEntity({ x: this.windowMidWidth * 1.3, y: this.windowMidHeight * 0.5 })
+    this.initEnemyEntity({ x: this.windowMidWidth * 0.3, y: this.windowMidHeight * 0.8 })
+    this.initEnemyEntity({ x: this.windowMidWidth * 1.3, y: this.windowMidHeight * 0.2 })
     
     // Init Keyboard Handlers
     this.initKeyboardHandlers()
-    
+
+    // Init Emitter Event Listeners
+    Emitter.on('enemy.death', this.observeEnemyDeathHandler.bind(this))
+    Emitter.on('projectile.hit', this.observeProjectileHitHandler.bind(this))
+
     this.isReady = true
   }
 
@@ -161,19 +178,19 @@ export class App {
     switch (event.code) {
       case 'ArrowLeft':
         this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: -3, y: 0 })
-        this.world.addComponent(PLAYER_ENTITY, 'direction', { x: -3, y: 0 })
+        this.world.addComponent(PLAYER_ENTITY, 'direction', { x: -1, y: 0 })
         break
       case 'ArrowRight':
         this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 3, y: 0 })
-        this.world.addComponent(PLAYER_ENTITY, 'direction', { x: 3, y: 0 })
+        this.world.addComponent(PLAYER_ENTITY, 'direction', { x: 1, y: 0 })
         break
       case 'ArrowUp':
         this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 0, y: -3 })
-        this.world.addComponent(PLAYER_ENTITY, 'direction', { x: 0, y: -3 })
+        this.world.addComponent(PLAYER_ENTITY, 'direction', { x: 0, y: -1 })
         break
       case 'ArrowDown':
         this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 0, y: 3 })
-        this.world.addComponent(PLAYER_ENTITY, 'direction', { x: 0, y: 3 })
+        this.world.addComponent(PLAYER_ENTITY, 'direction', { x: 0, y: 1 })
         break
       case 'Space':
         this.initProjectileEntity(PLAYER_ENTITY)
@@ -184,16 +201,12 @@ export class App {
   keyUpHandler(event: KeyboardEvent) {
     switch (event.key) {
       case 'ArrowLeft':
-        this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 0, y: 0 })
-        break
       case 'ArrowRight':
-        this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 0, y: 0 })
+        this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 0 })
         break
       case 'ArrowUp':
-        this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 0, y: 0 })
-        break
       case 'ArrowDown':
-        this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 0, y: 0 })
+        this.world.addComponent(PLAYER_ENTITY, 'velocity', { y: 0 })
         break
     }
   }
@@ -266,6 +279,28 @@ export class App {
 
       return false
     })
+  }
+  //#endregion
+
+  //#region Observe Events
+  observeEnemyDeathHandler(event: EmitterEvents['enemy.death']) {
+    console.log('enemy death', event)
+
+    this.$enemiesEl = this.$enemiesEl.filter($enemyEl => $enemyEl.id !== event.enemyId)
+  }
+
+  observeProjectileHitHandler(event: EmitterEvents['projectile.hit']) {
+    console.log('projectile hit', event)
+
+    this.$projectilesEl = this.$projectilesEl.filter($projectileEl => $projectileEl.id !== event.projectileId)
+  }
+
+  observePlayerDeathHandler(callback: (playerId: string) => void) {
+    
+  }
+
+  observePowerupHandler(callback: (powerupId: string) => void) {
+    
   }
   //#endregion
 

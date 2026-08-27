@@ -87,8 +87,8 @@ export class World {
     return this.components.find(c => (c.entityId === entityId && c.components[componentId]))?.components[componentId]
   }
 
-  getComponents(entityId: EntityId, exactMatch: boolean = true): Record<string, any> {
-    return this.components.find(c => exactMatch ? c.entityId === entityId : c.entityId.startsWith(entityId))?.components || {}
+  getComponents(entityId: EntityId, exactMatch: boolean = true): Record<string, any> | null {
+    return this.components.find(c => exactMatch ? c.entityId === entityId : c.entityId.startsWith(entityId))?.components || null
   }
 
   clearComponents() {

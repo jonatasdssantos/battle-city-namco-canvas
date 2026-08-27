@@ -7,6 +7,7 @@ import { CollisionEnemyResolver } from "./CollisionEnemyResolver"
 import { CollisionProjectileResolver } from "./CollisionProjectileResolver"
 import { CollisionPowerUpResolver } from "./CollisionPowerUpResolver"
 import type { CollidableComponents } from "./wallSeparation"
+import type { EntityId } from "../../../libs/ecs/entity"
 
 export class CollisionDetectionSystem {
 
@@ -34,6 +35,8 @@ export class CollisionDetectionSystem {
 
         const otherCollidableComponent = world.getComponents(otherCollidable.id)
 
+        if (!otherCollidableComponent || !collidableComponent) return
+
         const collidablePosition = { x: collidableComponent.position.x, y: collidableComponent.position.y }
         const collidableDimensions = { width: collidableComponent.dimensions.width, height: collidableComponent.dimensions.height }
 
@@ -53,31 +56,45 @@ export class CollisionDetectionSystem {
         if (isColliding) {
           if (collidable.tags.includes('player')) {
             CollisionPlayerResolver.resolve(
+              collidable.id as unknown as EntityId,
               collidableComponent as CollidableComponents,
+              otherCollidable.id as unknown as EntityId,
               otherCollidableComponent as CollidableComponents,
-              otherCollidable.tags
+              otherCollidable.tags,
+              world
             )
           }
 
           if (collidable.tags.includes('enemy')) {
             CollisionEnemyResolver.resolve(
+              collidable.id as unknown as EntityId,
               collidableComponent as CollidableComponents,
+              otherCollidable.id as unknown as EntityId,
               otherCollidableComponent as CollidableComponents,
-              otherCollidable.tags
+              otherCollidable.tags,
+              world
             )
           }
 
           if (collidable.tags.includes('projectile')) {
             CollisionProjectileResolver.resolve(
+              collidable.id as unknown as EntityId,
               collidableComponent as CollidableComponents,
-              otherCollidableComponent as CollidableComponents
+              otherCollidable.id as unknown as EntityId,
+              otherCollidableComponent as CollidableComponents,
+              otherCollidable.tags,
+              world
             )
           }
 
           if (collidable.tags.includes('powerup')) {
             CollisionPowerUpResolver.resolve(
+              collidable.id as unknown as EntityId,
               collidableComponent as CollidableComponents,
-              otherCollidableComponent as CollidableComponents
+              otherCollidable.id as unknown as EntityId,
+              otherCollidableComponent as CollidableComponents,
+              otherCollidable.tags,
+              world
             )
           }
         }
