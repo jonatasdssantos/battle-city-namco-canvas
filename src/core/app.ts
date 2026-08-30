@@ -114,7 +114,7 @@ export class App {
     this.world.addComponent(PLAYER_ENTITY, 'position', { x: 0, y: 0 })
     this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 0, y: 0 })
     this.world.addComponent(PLAYER_ENTITY, 'direction', { x: 0, y: 0 })
-    this.world.addComponent(PLAYER_ENTITY, 'health', { value: 100 })
+    this.world.addComponent(PLAYER_ENTITY, 'health', { value: 1 })
     this.world.addComponent(PLAYER_ENTITY, 'dimensions', { width: 25, height: 25, depth: 0 })
     this.world.addComponent(PLAYER_ENTITY, 'bbox', { width: 25, height: 25, depth: 0 })
   }
@@ -125,9 +125,10 @@ export class App {
     this.world.addComponent(enemyId, 'position', position)
     this.world.addComponent(enemyId, 'velocity', { x: 0, y: 0 })
     this.world.addComponent(enemyId, 'direction', { x: 0, y: 0 })
-    this.world.addComponent(enemyId, 'health', { value: 100 })
+    this.world.addComponent(enemyId, 'health', { value: 1 })
     this.world.addComponent(enemyId, 'dimensions', { width: 20, height: 20, depth: 0 })
     this.world.addComponent(enemyId, 'bbox', { width: 20, height: 20, depth: 0 })
+    this.world.addComponent(enemyId, 'level', { value: '1' }) // TODO: Add more enemy types
 
     // WIP
     this.handleEnemyCreation(enemyId)
@@ -161,7 +162,7 @@ export class App {
     this.world.addComponent(projectileId, 'direction', { x: ownerDirection.x, y: ownerDirection.y })
     this.world.addComponent(projectileId, 'dimensions', dimensions)
     this.world.addComponent(projectileId, 'bbox', dimensions)
-    this.world.addComponent(projectileId, 'damage', { value: 10 })
+    this.world.addComponent(projectileId, 'damage', { value: 1 })
     this.world.addComponent(projectileId, 'owner', { value: ownerEntityId })
 
     // WIP
