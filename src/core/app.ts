@@ -95,6 +95,7 @@ export class App {
     Emitter.on('enemy.death', this.observeEnemyDeathHandler.bind(this))
     Emitter.on('player.death', this.observePlayerDeathHandler.bind(this))
     Emitter.on('projectile.hit', this.observeProjectileHitHandler.bind(this))
+    Emitter.on('powerup.hit', this.observePowerupHandler.bind(this))
 
     this.isReady = true
   }
@@ -118,6 +119,7 @@ export class App {
     this.world.addComponent(PLAYER_ENTITY, 'health', { value: 1 })
     this.world.addComponent(PLAYER_ENTITY, 'dimensions', { width: 25, height: 25, depth: 0 })
     this.world.addComponent(PLAYER_ENTITY, 'bbox', { width: 25, height: 25, depth: 0 })
+    this.world.addComponent(PLAYER_ENTITY, 'score', { value: 0 })
   }
 
   initEnemyEntity(position: { x: number, y: number }, level: '1' | '2' | '3') {
@@ -313,6 +315,8 @@ export class App {
   observeEnemyDeathHandler(event: EmitterEvents['enemy.death']) {
     console.log('enemy death', event)
 
+    this.world.addComponent(PLAYER_ENTITY, 'score', { value: this.world.getComponent(PLAYER_ENTITY, 'score').value + 100 })
+
     this.$enemiesEl.find($enemyEl => $enemyEl.id === event.enemyId)?.remove()
     this.$enemiesEl = this.$enemiesEl.filter($enemyEl => $enemyEl.id !== event.enemyId)
   }
@@ -329,7 +333,13 @@ export class App {
     this.$playerEl = null
   }
 
-  observePowerupHandler(callback: (powerupId: string) => void) {
+  observePowerupHandler(event: EmitterEvents['powerup.hit']) {
+    console.log('powerup hit', event)
+
+    this.world.addComponent(PLAYER_ENTITY, 'score', { value: this.world.getComponent(PLAYER_ENTITY, 'score').value + 250 })
+
+    this.$powerupsEl.find($powerupEl => $powerupEl.id === event.powerupId)?.remove()
+    this.$powerupsEl = this.$powerupsEl.filter($powerupEl => $powerupEl.id !== event.powerupId)
     
   }
   //#endregion
