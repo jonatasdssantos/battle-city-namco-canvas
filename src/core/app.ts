@@ -81,18 +81,19 @@ export class App {
     this.initWallEntity({ x: this.windowMidWidth + 200, y: this.windowMidHeight - 150 }, { width: 50, height: 350, depth: 0 })
     this.initWallEntity({ x: this.windowMidWidth - 300, y: this.windowMidHeight }, { width: 100, height: 100, depth: 0 })
 
-    this.initEnemyEntity({ x: this.windowMidWidth * 0.5, y: this.windowMidHeight * 0.2 })
-    this.initEnemyEntity({ x: this.windowMidWidth * 1.5, y: this.windowMidHeight * 1.4 })
-    this.initEnemyEntity({ x: this.windowMidWidth * 0.3, y: this.windowMidHeight * 1.5 })
-    this.initEnemyEntity({ x: this.windowMidWidth * 1.3, y: this.windowMidHeight * 0.5 })
-    this.initEnemyEntity({ x: this.windowMidWidth * 0.3, y: this.windowMidHeight * 0.8 })
-    this.initEnemyEntity({ x: this.windowMidWidth * 1.3, y: this.windowMidHeight * 0.2 })
+    this.initEnemyEntity({ x: this.windowMidWidth * 0.5, y: this.windowMidHeight * 0.2 }, '2')
+    this.initEnemyEntity({ x: this.windowMidWidth * 1.5, y: this.windowMidHeight * 1.4 }, '2')
+    this.initEnemyEntity({ x: this.windowMidWidth * 0.3, y: this.windowMidHeight * 1.5 }, '2')
+    this.initEnemyEntity({ x: this.windowMidWidth * 1.3, y: this.windowMidHeight * 0.5 }, '3')
+    this.initEnemyEntity({ x: this.windowMidWidth * 0.3, y: this.windowMidHeight * 0.8 }, '2')
+    this.initEnemyEntity({ x: this.windowMidWidth * 1.3, y: this.windowMidHeight * 0.2 }, '1')
     
     // Init Keyboard Handlers
     this.initKeyboardHandlers()
 
     // Init Emitter Event Listeners
     Emitter.on('enemy.death', this.observeEnemyDeathHandler.bind(this))
+    Emitter.on('player.death', this.observePlayerDeathHandler.bind(this))
     Emitter.on('projectile.hit', this.observeProjectileHitHandler.bind(this))
 
     this.isReady = true
@@ -119,7 +120,7 @@ export class App {
     this.world.addComponent(PLAYER_ENTITY, 'bbox', { width: 25, height: 25, depth: 0 })
   }
 
-  initEnemyEntity(position: { x: number, y: number }, level: string) {
+  initEnemyEntity(position: { x: number, y: number }, level: '1' | '2' | '3') {
     const enemyId = this.world.addEntity('enemy', true, ['enemy', 'movable', 'collidable'])
 
     let health = 1
@@ -201,19 +202,19 @@ export class App {
   keyDownHandler(event: KeyboardEvent) {
     switch (event.code) {
       case 'ArrowLeft':
-        this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: -3, y: 0 })
+        this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: -3})
         this.world.addComponent(PLAYER_ENTITY, 'direction', { x: -1, y: 0 })
         break
       case 'ArrowRight':
-        this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 3, y: 0 })
+        this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 3})
         this.world.addComponent(PLAYER_ENTITY, 'direction', { x: 1, y: 0 })
         break
       case 'ArrowUp':
-        this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 0, y: -3 })
+        this.world.addComponent(PLAYER_ENTITY, 'velocity', { y: -3 })
         this.world.addComponent(PLAYER_ENTITY, 'direction', { x: 0, y: -1 })
         break
       case 'ArrowDown':
-        this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 0, y: 3 })
+        this.world.addComponent(PLAYER_ENTITY, 'velocity', { y: 3 })
         this.world.addComponent(PLAYER_ENTITY, 'direction', { x: 0, y: 1 })
         break
       case 'Space':
@@ -321,8 +322,9 @@ export class App {
     this.$projectilesEl = this.$projectilesEl.filter($projectileEl => $projectileEl.id !== event.projectileId)
   }
 
-  observePlayerDeathHandler(callback: (playerId: string) => void) {
-    
+  observePlayerDeathHandler(event: EmitterEvents['player.death']) {
+    this.$playerEl.remove()
+    this.$playerEl = null
   }
 
   observePowerupHandler(callback: (powerupId: string) => void) {
@@ -344,7 +346,9 @@ export class App {
 
       // Update Player Debug
       const playerPosition = this.world.getComponent(PLAYER_ENTITY, 'position')
-      this.$playerEl.style.transform = `translate3d(${playerPosition.x}px, ${playerPosition.y}px, 0)`
+      if (this.$playerEl && playerPosition) {
+        this.$playerEl.style.transform = `translate3d(${playerPosition.x}px, ${playerPosition.y}px, 0)`
+      }
 
       // Update Enemies
       this.$enemiesEl.forEach(enemyEl => {

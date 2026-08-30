@@ -16,6 +16,14 @@ export class CollisionProjectileResolver {
     world?.removeEntity(otherCollidableId.toString())
   }
 
+  static reduceEntityHealth(entityId: EntityId, damage: number, world?: World) {
+    const entityHealth = world?.getComponent(entityId.toString(), 'health')?.value ?? 0
+    const newHealth = Math.max(entityHealth - damage, 0)
+    world?.addComponent(entityId.toString(), 'health', { value: newHealth })
+
+    return newHealth
+  }
+
   static resolve(
     projectileId: EntityId,
     _projectileComponent: CollidableComponents,
@@ -33,12 +41,8 @@ export class CollisionProjectileResolver {
       Emitter.emit('enemy.hit', { enemyId: otherCollidableId.toString() })
       Emitter.emit('projectile.hit', { projectileId: projectileId.toString(), targetId: otherCollidableId.toString() })
     
-      const enemyHealth = _otherCollidableComponent.health.value
       const projectileDamage = _projectileComponent.damage.value
-
-      const newHealth = Math.max(enemyHealth - projectileDamage, 0)
-
-      world?.addComponent(otherCollidableId.toString(), 'health', { value: newHealth })
+      const newHealth = this.reduceEntityHealth(otherCollidableId, projectileDamage, world)
 
       if (newHealth <= 0) {
         Emitter.emit('enemy.death', { enemyId: otherCollidableId.toString() })
@@ -47,10 +51,18 @@ export class CollisionProjectileResolver {
     }
 
     if (otherTags.includes('player')) {
-      Emitter.emit('player.hit', { playerId: otherCollidableId.toString() })
-      Emitter.emit('player.death', { playerId: otherCollidableId.toString() })
+      this.removeProjectile(projectileId, world)
 
+      Emitter.emit('player.hit', { playerId: otherCollidableId.toString() })
       Emitter.emit('projectile.hit', { projectileId: projectileId.toString(), targetId: otherCollidableId.toString() })
+    
+      const projectileDamage = _projectileComponent.damage.value
+      const newHealth = this.reduceEntityHealth(otherCollidableId, projectileDamage, world)
+
+      if (newHealth <= 0) {
+        Emitter.emit('player.death', { playerId: otherCollidableId.toString() })
+        this.removeCollidable(otherCollidableId, world)
+      }
     }
 
     if (otherTags.includes('wall')) {
