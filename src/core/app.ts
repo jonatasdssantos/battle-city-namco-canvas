@@ -119,16 +119,30 @@ export class App {
     this.world.addComponent(PLAYER_ENTITY, 'bbox', { width: 25, height: 25, depth: 0 })
   }
 
-  initEnemyEntity(position: { x: number, y: number }) {
+  initEnemyEntity(position: { x: number, y: number }, level: string) {
     const enemyId = this.world.addEntity('enemy', true, ['enemy', 'movable', 'collidable'])
+
+    let health = 1
+
+    switch (level) {
+      case '1':
+        health = 1
+        break;
+      case '2':
+        health = 2
+        break;
+      case '3':
+        health = 3
+        break;
+    }
 
     this.world.addComponent(enemyId, 'position', position)
     this.world.addComponent(enemyId, 'velocity', { x: 0, y: 0 })
     this.world.addComponent(enemyId, 'direction', { x: 0, y: 0 })
-    this.world.addComponent(enemyId, 'health', { value: 1 })
+    this.world.addComponent(enemyId, 'health', { value: health })
     this.world.addComponent(enemyId, 'dimensions', { width: 20, height: 20, depth: 0 })
     this.world.addComponent(enemyId, 'bbox', { width: 20, height: 20, depth: 0 })
-    this.world.addComponent(enemyId, 'level', { value: '1' }) // TODO: Add more enemy types
+    this.world.addComponent(enemyId, 'level', { value: level })
 
     // WIP
     this.handleEnemyCreation(enemyId)
