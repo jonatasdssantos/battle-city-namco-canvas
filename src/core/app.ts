@@ -161,6 +161,8 @@ export class App {
   }
 
   initProjectileEntity( ownerEntityId: string ) {
+    if (!ownerEntityId || !this.world.getEntity(ownerEntityId)) return
+
     const projectileId = this.world.addEntity('projectile', true, ['projectile', 'movable', 'collidable'])
     
     const ownerDirection = this.world.getComponent(ownerEntityId, 'direction')
