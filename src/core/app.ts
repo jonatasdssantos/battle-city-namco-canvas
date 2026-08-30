@@ -30,7 +30,7 @@ export type EmitterEvents = {
   'projectile.hit': { projectileId: string, targetId: string },
 
   'powerup.spawn': { powerupId: string },
-  'powerup.hit': { powerupId: string }
+  'powerup.hit': { powerupId: string, playerId: string }
 }
 
 export const Emitter = mitt<EmitterEvents>()
@@ -188,12 +188,17 @@ export class App {
     this.handleProjectileCreation(projectileId)
   }
 
-  initPowerupEntity() {
+  initPowerupEntity(position: { x: number, y: number }, type: 'health' | 'speed' | 'shield') {
     const powerupId = this.world.addEntity('powerup', true, ['powerup', 'static', 'collidable'])
 
-    this.world.addComponent(powerupId, 'position', { x: 0, y: 0 })
+    this.world.addComponent(powerupId, 'position', position)
     this.world.addComponent(powerupId, 'dimensions', { width: 10, height: 10, depth: 0 })
     this.world.addComponent(powerupId, 'bbox', { width: 10, height: 10, depth: 0 })
+    this.world.addComponent(powerupId, 'type', { value: type })
+    this.world.addComponent(powerupId, 'counter', { value: 10 })
+
+    // WIP
+    this.handlePowerupCreation(powerupId)
   }
   //#endregion
 
@@ -308,6 +313,21 @@ export class App {
 
       return false
     })
+  }
+
+  handlePowerupCreation(powerupId: string) {
+    const powerupPosition = this.world.getComponent(powerupId, 'position')
+    const powerupDimensions = this.world.getComponent(powerupId, 'dimensions')
+
+    const $powerupEl = document.createElement('div')
+    $powerupEl.id = powerupId
+    $powerupEl.className = 'powerup'
+    $powerupEl.style.transform = `translate3d(${powerupPosition.x}px, ${powerupPosition.y}px, 0)`
+    $powerupEl.style.width = `${powerupDimensions.width}px`
+    $powerupEl.style.height = `${powerupDimensions.height}px`
+
+    this.$appEl.appendChild($powerupEl)
+    this.$powerupsEl.push($powerupEl)
   }
   //#endregion
 

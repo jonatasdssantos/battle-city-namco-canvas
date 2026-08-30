@@ -1,7 +1,8 @@
 import type { EntityId } from "../../../libs/ecs/entity"
 import type { World } from "../../../libs/ecs/world"
-
 import type { CollidableComponents } from "./wallSeparation"
+
+import { Emitter } from "../../app"
 
 export class CollisionPowerUpResolver {
   static resolve(
@@ -12,7 +13,8 @@ export class CollisionPowerUpResolver {
     otherTags: string[] = [],
     world?: World
   ) {
-    if (!otherTags.includes('wall')) return
-    
+    if (!otherTags.includes('enemy')) return
+
+    Emitter.emit('powerup.hit', { powerupId: powerupId.toString(), playerId: otherCollidableId.toString() })
   }
 }
