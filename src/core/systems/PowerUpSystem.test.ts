@@ -78,16 +78,44 @@ describe('PowerUpSystem.findAvailablePosition', () => {
     const world = new World()
     const wallPosition = { x: 10, y: 0 }
     const wallDimensions = { width: 10, height: 100 }
-    addWall(world, wallPosition, wallDimensions)
+    const wallId = addWall(world, wallPosition, wallDimensions)
     const position = { x: 8, y: 20 }
     const dimensions = { width: 5, height: 5 }
+
+    const wallBefore = world.getComponents(wallId)!
+    const storedPositionBefore = { ...wallBefore.position }
+    const storedDimensionsBefore = { ...wallBefore.dimensions }
 
     PowerUpSystem.findAvailablePosition(position, dimensions, world)
 
     expect(position).toEqual({ x: 8, y: 20 })
     expect(dimensions).toEqual({ width: 5, height: 5 })
-    expect(wallPosition).toEqual({ x: 10, y: 0 })
-    expect(wallDimensions).toEqual({ width: 10, height: 100 })
+
+    const wallAfter = world.getComponents(wallId)!
+    expect(wallAfter.position).toEqual(storedPositionBefore)
+    expect(wallAfter.dimensions).toEqual(storedDimensionsBefore)
+  })
+
+  it('prefers vertical movement when axis penetrations are equal', () => {
+    const world = new World()
+    addWall(world, { x: 0, y: 0 }, { width: 20, height: 20 })
+
+    expect(PowerUpSystem.findAvailablePosition(
+      { x: 5, y: 5 },
+      { width: 10, height: 10 },
+      world
+    )).toEqual({ x: 5, y: 20 })
+  })
+
+  it('prefers the positive direction when opposite-edge penetrations are equal', () => {
+    const world = new World()
+    addWall(world, { x: 10, y: 0 }, { width: 10, height: 100 })
+
+    expect(PowerUpSystem.findAvailablePosition(
+      { x: 13, y: 20 },
+      { width: 4, height: 4 },
+      world
+    )).toEqual({ x: 20, y: 20 })
   })
 
   it('returns null when conflicting walls keep the candidate trapped', () => {
