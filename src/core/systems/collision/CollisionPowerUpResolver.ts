@@ -13,7 +13,14 @@ export class CollisionPowerUpResolver {
     otherTags: string[] = [],
     world?: World
   ) {
-    if (!otherTags.includes('enemy')) return
+    if (!otherTags.includes('player')) return
+
+    // Add the powerup to the player
+    world?.addComponent(otherCollidableId.toString(), 'powerups', { value: [..._otherCollidableComponent.powerups.value, { type: _powerupComponent.type.value }] })
+
+    // Remove the powerup from the world
+    world?.removeComponent(powerupId.toString())
+    world?.removeEntity(powerupId.toString())   
 
     Emitter.emit('powerup.hit', { powerupId: powerupId.toString(), playerId: otherCollidableId.toString() })
   }

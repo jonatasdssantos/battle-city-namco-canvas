@@ -6,7 +6,8 @@ import {
   EnemiesAISystem,
   MovementSystem, 
   ProjectileSystem,
-  CollisionDetectionSystem
+  CollisionDetectionSystem,
+  PowerUpSystem
 } from './systems';
 
 
@@ -31,6 +32,7 @@ export type EmitterEvents = {
 
   'powerup.spawn': { powerupId: string },
   'powerup.hit': { powerupId: string, playerId: string }
+  'powerup.expired': { powerupId: string }
 }
 
 export const Emitter = mitt<EmitterEvents>()
@@ -81,12 +83,14 @@ export class App {
     this.initWallEntity({ x: this.windowMidWidth + 200, y: this.windowMidHeight - 150 }, { width: 50, height: 350, depth: 0 })
     this.initWallEntity({ x: this.windowMidWidth - 300, y: this.windowMidHeight }, { width: 100, height: 100, depth: 0 })
 
-    this.initEnemyEntity({ x: this.windowMidWidth * 0.5, y: this.windowMidHeight * 0.2 }, '2')
-    this.initEnemyEntity({ x: this.windowMidWidth * 1.5, y: this.windowMidHeight * 1.4 }, '2')
-    this.initEnemyEntity({ x: this.windowMidWidth * 0.3, y: this.windowMidHeight * 1.5 }, '2')
-    this.initEnemyEntity({ x: this.windowMidWidth * 1.3, y: this.windowMidHeight * 0.5 }, '3')
-    this.initEnemyEntity({ x: this.windowMidWidth * 0.3, y: this.windowMidHeight * 0.8 }, '2')
-    this.initEnemyEntity({ x: this.windowMidWidth * 1.3, y: this.windowMidHeight * 0.2 }, '1')
+    // this.initEnemyEntity({ x: this.windowMidWidth * 0.5, y: this.windowMidHeight * 0.2 }, '2')
+    // this.initEnemyEntity({ x: this.windowMidWidth * 1.5, y: this.windowMidHeight * 1.4 }, '2')
+    // this.initEnemyEntity({ x: this.windowMidWidth * 0.3, y: this.windowMidHeight * 1.5 }, '2')
+    // this.initEnemyEntity({ x: this.windowMidWidth * 1.3, y: this.windowMidHeight * 0.5 }, '3')
+    // this.initEnemyEntity({ x: this.windowMidWidth * 0.3, y: this.windowMidHeight * 0.8 }, '2')
+    // this.initEnemyEntity({ x: this.windowMidWidth * 1.3, y: this.windowMidHeight * 0.2 }, '1')
+
+    this.initPowerupEntity({ x: 50, y: 50 }, 'health')
     
     // Init Keyboard Handlers
     this.initKeyboardHandlers()
@@ -106,6 +110,7 @@ export class App {
     this.world.addSystem('enemiesAI', new EnemiesAISystem())
     this.world.addSystem('movement', new MovementSystem())
     this.world.addSystem('projectile', new ProjectileSystem())
+    this.world.addSystem('powerup', new PowerUpSystem())
     this.world.addSystem('collision', new CollisionDetectionSystem())
   }
 
@@ -120,6 +125,7 @@ export class App {
     this.world.addComponent(PLAYER_ENTITY, 'dimensions', { width: 25, height: 25, depth: 0 })
     this.world.addComponent(PLAYER_ENTITY, 'bbox', { width: 25, height: 25, depth: 0 })
     this.world.addComponent(PLAYER_ENTITY, 'score', { value: 0 })
+    this.world.addComponent(PLAYER_ENTITY, 'powerups', { value: [] as string[] })
   }
 
   initEnemyEntity(position: { x: number, y: number }, level: '1' | '2' | '3') {
@@ -195,7 +201,11 @@ export class App {
     this.world.addComponent(powerupId, 'dimensions', { width: 10, height: 10, depth: 0 })
     this.world.addComponent(powerupId, 'bbox', { width: 10, height: 10, depth: 0 })
     this.world.addComponent(powerupId, 'type', { value: type })
-    this.world.addComponent(powerupId, 'counter', { value: 10 })
+    this.world.addComponent(powerupId, 'durationOnMap', { value: 10 })
+    this.world.addComponent(powerupId, 'expired', { value: false })
+    this.world.addComponent(powerupId, 'pickedUp', { value: false })
+    this.world.addComponent(powerupId, 'activated', { value: false })
+    this.world.addComponent(powerupId, 'owner', { value: null as string | null })
 
     // WIP
     this.handlePowerupCreation(powerupId)
@@ -335,7 +345,7 @@ export class App {
   observeEnemyDeathHandler(event: EmitterEvents['enemy.death']) {
     console.log('enemy death', event)
 
-    this.world.addComponent(PLAYER_ENTITY, 'score', { value: this.world.getComponent(PLAYER_ENTITY, 'score').value + 100 })
+    this.world.addComponent(PLAYER_ENTITY, 'score', { value: this.world.getComponent(PLAYER_ENTITY, 'score').value + 100 }) // WIP
 
     this.$enemiesEl.find($enemyEl => $enemyEl.id === event.enemyId)?.remove()
     this.$enemiesEl = this.$enemiesEl.filter($enemyEl => $enemyEl.id !== event.enemyId)
@@ -356,11 +366,17 @@ export class App {
   observePowerupHandler(event: EmitterEvents['powerup.hit']) {
     console.log('powerup hit', event)
 
-    this.world.addComponent(PLAYER_ENTITY, 'score', { value: this.world.getComponent(PLAYER_ENTITY, 'score').value + 250 })
+    this.world.addComponent(PLAYER_ENTITY, 'score', { value: this.world.getComponent(PLAYER_ENTITY, 'score').value + 250 }) // WIP
 
     this.$powerupsEl.find($powerupEl => $powerupEl.id === event.powerupId)?.remove()
     this.$powerupsEl = this.$powerupsEl.filter($powerupEl => $powerupEl.id !== event.powerupId)
-    
+  }
+
+  observePowerupExpiredHandler(event: EmitterEvents['powerup.expired']) {
+    console.log('powerup expired', event)
+
+    this.$powerupsEl.find($powerupEl => $powerupEl.id === event.powerupId)?.remove()
+    this.$powerupsEl = this.$powerupsEl.filter($powerupEl => $powerupEl.id !== event.powerupId)
   }
   //#endregion
 

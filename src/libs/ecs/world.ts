@@ -71,12 +71,16 @@ export class World {
     return component
   }
 
-  removeComponent(entityId: EntityId, componentId: string) {
+  removeComponent(entityId: EntityId, componentId?: string) {
     const componentEntry = this.components.find(c => c.entityId === entityId)
 
     if (!componentEntry) return
 
-    delete componentEntry.components[componentId]
+    if (componentId) {
+      delete componentEntry.components[componentId]
+    } else {
+      componentEntry.components = {}
+    }
 
     if (Object.keys(componentEntry.components).length === 0) {
       this.components = this.components.filter(c => c.entityId !== entityId)

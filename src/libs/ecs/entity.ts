@@ -1,6 +1,6 @@
 import type { Components } from '../../components.ts'
 
-export type EntityId = number
+export type EntityId = number | string
 
 export type ComponentName = keyof Components
 
