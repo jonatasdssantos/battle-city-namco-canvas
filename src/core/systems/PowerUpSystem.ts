@@ -16,6 +16,7 @@ export class PowerUpSystem {
   }
 
   execute(world: World) {
-    
+    // WIP: Loop powerup entities and handle their expiration
+    // WIP: Loop player entities and handle their powerups
   }
 }
