@@ -118,6 +118,37 @@ describe('PowerUpSystem.findAvailablePosition', () => {
     )).toEqual({ x: 20, y: 20 })
   })
 
+  it('ignores wall-tagged entities with no components', () => {
+    const world = new World()
+    world.addEntity('wall', true, ['wall'])
+    const position = { x: 5, y: 5 }
+
+    const result = PowerUpSystem.findAvailablePosition(
+      position,
+      { width: 10, height: 10 },
+      world
+    )
+
+    expect(result).toEqual(position)
+    expect(result).not.toBe(position)
+  })
+
+  it('ignores wall-tagged entities with only position', () => {
+    const world = new World()
+    const wallId = world.addEntity('wall', true, ['wall'])
+    world.addComponent(wallId, 'position', { x: 0, y: 0 })
+    const position = { x: 5, y: 5 }
+
+    const result = PowerUpSystem.findAvailablePosition(
+      position,
+      { width: 10, height: 10 },
+      world
+    )
+
+    expect(result).toEqual(position)
+    expect(result).not.toBe(position)
+  })
+
   it('returns null when conflicting walls keep the candidate trapped', () => {
     const world = new World()
     addWall(world, { x: 0, y: 0 }, { width: 10, height: 100 })
