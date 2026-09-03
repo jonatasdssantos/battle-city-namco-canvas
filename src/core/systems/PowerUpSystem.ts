@@ -1,7 +1,60 @@
 import type { World } from "../../libs/ecs/world"
 import { Emitter } from "../app"
 
+type Position = { x: number, y: number }
+type Dimensions = { width: number, height: number }
+type Rectangle = { position: Position, dimensions: Dimensions }
+
 export class PowerUpSystem {
+
+  static findAvailablePosition(
+    position: Position,
+    dimensions: Dimensions,
+    world: World
+  ): Position | null {
+    const walls = world.getEntitiesByTag('wall')
+      .map(({ id }) => world.getComponents(id))
+      .filter((components): components is Rectangle =>
+        components !== null &&
+        components.position !== undefined &&
+        components.dimensions !== undefined
+      )
+    const candidate = { ...position }
+    const maxPasses = Math.max(1, walls.length * 4)
+
+    const isColliding = (wall: Rectangle) =>
+      candidate.x < wall.position.x + wall.dimensions.width &&
+      candidate.x + dimensions.width > wall.position.x &&
+      candidate.y < wall.position.y + wall.dimensions.height &&
+      candidate.y + dimensions.height > wall.position.y
+
+    for (let pass = 0; pass < maxPasses; pass += 1) {
+      let adjusted = false
+
+      for (const wall of walls) {
+        if (!isColliding(wall)) continue
+
+        const overlapLeft = candidate.x + dimensions.width - wall.position.x
+        const overlapRight = wall.position.x + wall.dimensions.width - candidate.x
+        const overlapTop = candidate.y + dimensions.height - wall.position.y
+        const overlapBottom = wall.position.y + wall.dimensions.height - candidate.y
+        const minOverlapX = Math.min(overlapLeft, overlapRight)
+        const minOverlapY = Math.min(overlapTop, overlapBottom)
+
+        if (minOverlapX < minOverlapY) {
+          candidate.x += overlapLeft < overlapRight ? -overlapLeft : overlapRight
+        } else {
+          candidate.y += overlapTop < overlapBottom ? -overlapTop : overlapBottom
+        }
+
+        adjusted = true
+      }
+
+      if (!adjusted) return candidate
+    }
+
+    return walls.some(isColliding) ? null : candidate
+  }
 
   static removePowerup(powerupId: string, world: World) {
     world.removeComponent(powerupId, 'powerup')
