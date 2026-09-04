@@ -57,13 +57,12 @@ export class PowerUpSystem {
   }
 
   static removePowerup(powerupId: string, world: World) {
-    world.removeComponent(powerupId, 'powerup')
+    world.removeComponent(powerupId.toString())
     world.removeEntity(powerupId)
   }
 
   static handlePowerupExpiration(powerupId: string, world: World) {
-    world?.addComponent(powerupId.toString(), 'expired', { value: true })
-    this.removePowerup(powerupId, world)
+    PowerUpSystem.removePowerup(powerupId, world)
 
     Emitter.emit('powerup.expired', { powerupId: powerupId.toString() })
   }
@@ -71,5 +70,24 @@ export class PowerUpSystem {
   execute(world: World) {
     // WIP: Loop powerup entities and handle their expiration
     // WIP: Loop player entities and handle their powerups
+    const powerups = world.getEntitiesByTag('powerup')
+
+    powerups.forEach(powerup => {
+      const powerupComponent = world.getComponents(powerup.id)
+
+      const { type, durationOnMap, expired, pickedUp, owner } = powerupComponent
+
+      //** Compute the duration on map */
+      if (!pickedUp.value) {
+        const dur = Math.max(durationOnMap.value - 0.05, 0)
+
+        world.addComponent(powerup.id.toString(), 'durationOnMap', { value: dur })
+      }
+
+      //** Handle the powerup expiration */
+      if (durationOnMap.value <= 0 && !pickedUp.value) {
+        PowerUpSystem.handlePowerupExpiration(powerup.id.toString(), world)
+      }
+    })
   }
 }

@@ -83,12 +83,12 @@ export class App {
     this.initWallEntity({ x: this.windowMidWidth + 200, y: this.windowMidHeight - 150 }, { width: 50, height: 350, depth: 0 })
     this.initWallEntity({ x: this.windowMidWidth - 300, y: this.windowMidHeight }, { width: 100, height: 100, depth: 0 })
 
-    // this.initEnemyEntity({ x: this.windowMidWidth * 0.5, y: this.windowMidHeight * 0.2 }, '2')
-    // this.initEnemyEntity({ x: this.windowMidWidth * 1.5, y: this.windowMidHeight * 1.4 }, '2')
-    // this.initEnemyEntity({ x: this.windowMidWidth * 0.3, y: this.windowMidHeight * 1.5 }, '2')
-    // this.initEnemyEntity({ x: this.windowMidWidth * 1.3, y: this.windowMidHeight * 0.5 }, '3')
-    // this.initEnemyEntity({ x: this.windowMidWidth * 0.3, y: this.windowMidHeight * 0.8 }, '2')
-    // this.initEnemyEntity({ x: this.windowMidWidth * 1.3, y: this.windowMidHeight * 0.2 }, '1')
+    this.initEnemyEntity({ x: this.windowMidWidth * 0.5, y: this.windowMidHeight * 0.2 }, '2')
+    this.initEnemyEntity({ x: this.windowMidWidth * 1.5, y: this.windowMidHeight * 1.4 }, '2')
+    this.initEnemyEntity({ x: this.windowMidWidth * 0.3, y: this.windowMidHeight * 1.5 }, '2')
+    this.initEnemyEntity({ x: this.windowMidWidth * 1.3, y: this.windowMidHeight * 0.5 }, '3')
+    this.initEnemyEntity({ x: this.windowMidWidth * 0.3, y: this.windowMidHeight * 0.8 }, '2')
+    this.initEnemyEntity({ x: this.windowMidWidth * 1.3, y: this.windowMidHeight * 0.2 }, '1')
 
     this.initPowerupEntity({ x: 50, y: 50 }, 'health')
     
@@ -100,6 +100,7 @@ export class App {
     Emitter.on('player.death', this.observePlayerDeathHandler.bind(this))
     Emitter.on('projectile.hit', this.observeProjectileHitHandler.bind(this))
     Emitter.on('powerup.hit', this.observePowerupHandler.bind(this))
+    Emitter.on('powerup.expired', this.observePowerupExpiredHandler.bind(this))
 
     this.isReady = true
   }
@@ -375,7 +376,7 @@ export class App {
   }
 
   observePowerupExpiredHandler(event: EmitterEvents['powerup.expired']) {
-    console.log('powerup expired', event)
+    console.log('powerup expired event', event)
 
     this.$powerupsEl.find($powerupEl => $powerupEl.id === event.powerupId)?.remove()
     this.$powerupsEl = this.$powerupsEl.filter($powerupEl => $powerupEl.id !== event.powerupId)
