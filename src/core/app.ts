@@ -197,7 +197,9 @@ export class App {
   initPowerupEntity(position: { x: number, y: number }, type: 'health' | 'speed' | 'shield') {
     const powerupId = this.world.addEntity('powerup', true, ['powerup', 'static', 'collidable'])
 
-    this.world.addComponent(powerupId, 'position', position)
+    let pos = PowerUpSystem.findAvailablePosition(position, { width: 10, height: 10 }, this.world)
+
+    this.world.addComponent(powerupId, 'position', pos)
     this.world.addComponent(powerupId, 'dimensions', { width: 10, height: 10, depth: 0 })
     this.world.addComponent(powerupId, 'bbox', { width: 10, height: 10, depth: 0 })
     this.world.addComponent(powerupId, 'type', { value: type })
