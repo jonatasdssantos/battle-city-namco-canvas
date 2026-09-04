@@ -153,6 +153,7 @@ export class App {
     this.world.addComponent(enemyId, 'dimensions', { width: 20, height: 20, depth: 0 })
     this.world.addComponent(enemyId, 'bbox', { width: 20, height: 20, depth: 0 })
     this.world.addComponent(enemyId, 'level', { value: level })
+    this.world.addComponent(enemyId, 'special', { value: false })
 
     // WIP
     this.handleEnemyCreation(enemyId)
