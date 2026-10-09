@@ -1,28 +1,21 @@
-import type { World } from "../../libs/ecs/world"
+import type { Entity, GameWorld } from "../../components"
 import { Emitter } from "../app"
 
 type Position = { x: number, y: number }
 type Dimensions = { width: number, height: number }
-type Rectangle = { position: Position, dimensions: Dimensions }
 
 export class PowerUpSystem {
 
   static findAvailablePosition(
     position: Position,
     dimensions: Dimensions,
-    world: World
+    world: GameWorld
   ): Position | null {
-    const walls = world.getEntitiesByTag('wall')
-      .map(({ id }) => world.getComponents(id))
-      .filter((components): components is Rectangle =>
-        components !== null &&
-        components.position !== undefined &&
-        components.dimensions !== undefined
-      )
+    const walls = world.with('wall', 'position', 'dimensions').entities
     const candidate = { ...position }
     const maxPasses = Math.max(1, walls.length * 4)
 
-    const isColliding = (wall: Rectangle) =>
+    const isColliding = (wall: (typeof walls)[number]) =>
       candidate.x < wall.position.x + wall.dimensions.width &&
       candidate.x + dimensions.width > wall.position.x &&
       candidate.y < wall.position.y + wall.dimensions.height &&
@@ -56,38 +49,26 @@ export class PowerUpSystem {
     return walls.some(isColliding) ? null : candidate
   }
 
-  static removePowerup(powerupId: string, world: World) {
-    world.removeComponent(powerupId.toString())
-    world.removeEntity(powerupId)
+  static handlePowerupExpiration(powerup: Entity, world: GameWorld) {
+    world.remove(powerup)
+
+    Emitter.emit('powerup.expired', { powerup })
   }
 
-  static handlePowerupExpiration(powerupId: string, world: World) {
-    PowerUpSystem.removePowerup(powerupId, world)
-
-    Emitter.emit('powerup.expired', { powerupId: powerupId.toString() })
-  }
-
-  execute(world: World) {
-    // WIP: Loop powerup entities and handle their expiration
+  execute(world: GameWorld) {
     // WIP: Loop player entities and handle their powerups
-    const powerups = world.getEntitiesByTag('powerup')
+    const powerups = world.with('powerup', 'durationOnMap')
 
-    powerups.forEach(powerup => {
-      const powerupComponent = world.getComponents(powerup.id)
-
-      const { type, durationOnMap, expired, pickedUp, owner } = powerupComponent
+    for (const powerup of powerups) {
+      if (powerup.pickedUp) continue
 
       //** Compute the duration on map */
-      if (!pickedUp.value) {
-        const dur = Math.max(durationOnMap.value - 0.05, 0)
-
-        world.addComponent(powerup.id.toString(), 'durationOnMap', { value: dur })
-      }
+      powerup.durationOnMap = Math.max(powerup.durationOnMap - 0.05, 0)
 
       //** Handle the powerup expiration */
-      if (durationOnMap.value <= 0 && !pickedUp.value) {
-        PowerUpSystem.handlePowerupExpiration(powerup.id.toString(), world)
+      if (powerup.durationOnMap <= 0) {
+        PowerUpSystem.handlePowerupExpiration(powerup, world)
       }
-    })
+    }
   }
 }

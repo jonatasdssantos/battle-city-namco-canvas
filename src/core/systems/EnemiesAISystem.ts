@@ -1,4 +1,4 @@
-import type { World } from "../../libs/ecs/world";
+import type { GameWorld, Vector } from "../../components";
 
 import { isInsideViewport } from "../viewport";
 
@@ -20,18 +20,20 @@ export class EnemiesAISystem {
     return Math.floor(min + Math.random() * (max - min))
   }
 
-  execute(world: World) {
-    const enemies = world.getEntitiesByTag('enemy')
+  execute(world: GameWorld) {
+    const enemies = world.with('enemy', 'position', 'velocity', 'dimensions')
 
-    enemies.forEach(enemy => {
-      const components = world.getComponents(enemy.id)
+    for (const enemy of enemies) {
+      const { position, velocity, dimensions } = enemy
 
-      const { position, velocity, dimensions } = components
+      if (!enemy.ai) {
+        world.addComponent(enemy, 'ai', {
+          moveTimer: 0,
+          shootTimer: EnemiesAISystem.randomFrames(SHOOT_FRAMES)
+        })
+      }
 
-      const ai = components.ai ?? world.addComponent(enemy.id, 'ai', {
-        moveTimer: 0,
-        shootTimer: EnemiesAISystem.randomFrames(SHOOT_FRAMES)
-      })
+      const ai = enemy.ai!
 
       ai.moveTimer -= 1
       ai.shootTimer -= 1
@@ -43,25 +45,25 @@ export class EnemiesAISystem {
       if (ai.moveTimer <= 0 || isBlocked || isLeavingViewport) {
         const heading = this.pickHeading(position, dimensions, isBlocked || isLeavingViewport ? velocity : null)
 
-        world.addComponent(enemy.id, 'velocity', heading)
-        world.addComponent(enemy.id, 'direction', heading)
+        enemy.velocity = { ...heading }
+        enemy.direction = { ...heading }
 
         ai.moveTimer = EnemiesAISystem.randomFrames(MOVE_FRAMES)
       }
 
       if (ai.shootTimer <= 0) {
-        world.addComponent(enemy.id, 'shooting', { requested: true })
+        world.addComponent(enemy, 'shootRequested', true)
 
         ai.shootTimer = EnemiesAISystem.randomFrames(SHOOT_FRAMES)
       }
-    })
+    }
   }
 
   /** Headings that keep the enemy on screen, minus the one it is already stuck on. */
   pickHeading(
-    position: { x: number, y: number },
+    position: Vector,
     dimensions: { width: number, height: number },
-    rejectedVelocity: { x: number, y: number } | null
+    rejectedVelocity: Vector | null
   ) {
     const headings = HEADINGS
       .map(heading => ({ x: heading.x * ENEMY_SPEED, y: heading.y * ENEMY_SPEED }))
@@ -76,9 +78,9 @@ export class EnemiesAISystem {
   }
 
   staysInsideViewport(
-    position: { x: number, y: number },
+    position: Vector,
     dimensions: { width: number, height: number },
-    velocity: { x: number, y: number }
+    velocity: Vector
   ) {
     return isInsideViewport({ x: position.x + velocity.x, y: position.y + velocity.y }, dimensions)
   }

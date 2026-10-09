@@ -1,34 +1,66 @@
-export interface Position {
+import type { With, World } from 'miniplex'
+
+export interface Vector {
   x: number
   y: number
 }
 
-export interface Velocity {
-  x: number
-  y: number
-}
-
-export type Direction = 'up' | 'down' | 'left' | 'right'
-
-export interface Facing {
-  direction: Direction
-}
-
-export interface Renderable {
+export interface Dimensions {
   width: number
   height: number
-  color: string
+  depth: number
 }
 
-export interface PlayerControlled {
-  speed: number
+export type EnemyLevel = '1' | '2' | '3'
+
+export type PowerUpType = 'health' | 'speed' | 'shield'
+
+export interface EnemyAI {
+  moveTimer: number
+  shootTimer: number
 }
 
-/** Every component type the game knows about. One entry per component. */
-export interface Components {
-  position: Position
-  velocity: Velocity
-  facing: Facing
-  renderable: Renderable
-  playerControlled: PlayerControlled
+/** Every component the game knows about. Tags are `true`-valued components. */
+export type Entity = {
+  // Tags
+  player?: true
+  enemy?: true
+  wall?: true
+  projectile?: true
+  powerup?: true
+  movable?: true
+  static?: true
+  collidable?: true
+  shootRequested?: true
+
+  // Spatial
+  position?: Vector
+  velocity?: Vector
+  direction?: Vector
+  dimensions?: Dimensions
+  bbox?: Dimensions
+
+  // Gameplay
+  health?: number
+  score?: number
+  powerups?: { type: PowerUpType }[]
+  level?: EnemyLevel
+  special?: boolean
+  ai?: EnemyAI
+  damage?: number
+  owner?: Entity | null
+
+  // Power-ups
+  powerupType?: PowerUpType
+  durationOnMap?: number
+  expired?: boolean
+  pickedUp?: boolean
+  activated?: boolean
+
+  // Rendering
+  sprite?: HTMLElement
 }
+
+export type GameWorld = World<Entity>
+
+export type Collidable = With<Entity, 'position' | 'dimensions'>

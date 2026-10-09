@@ -1,19 +1,11 @@
-import type { EntityId } from "../../../libs/ecs/entity"
-import type { World } from "../../../libs/ecs/world"
+import type { Collidable } from "../../../components"
 
-import { separateFromWall, type CollidableComponents } from "./wallSeparation"
+import { separateFromWall } from "./wallSeparation"
 
 export class CollisionEnemyResolver {
-  static resolve(
-    enemyId: EntityId,
-    enemyComponent: CollidableComponents,
-    otherCollidableId: EntityId,
-    otherCollidableComponent: CollidableComponents,
-    otherTags: string[] = [],
-    world?: World
-  ) {
-    if (!otherTags.includes('wall')) return
+  static resolve(enemy: Collidable, other: Collidable) {
+    if (!other.wall) return
 
-    separateFromWall(enemyComponent, otherCollidableComponent)
+    separateFromWall(enemy, other)
   }
 }

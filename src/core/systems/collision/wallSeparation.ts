@@ -1,15 +1,11 @@
-export type CollidableComponents = {
-  position: { x: number, y: number }
-  velocity?: { x: number, y: number }
-  dimensions: { width: number, height: number }
-}
+import type { Collidable } from "../../../components"
 
 /** Pushes a collidable back out of a wall along its shallowest axis and stops it there. */
-export function separateFromWall(collidableComponent: CollidableComponents, wallComponent: CollidableComponents) {
-  const collidable = collidableComponent.position
-  const wall = wallComponent.position
-  const collidableSize = collidableComponent.dimensions
-  const wallSize = wallComponent.dimensions
+export function separateFromWall(collidableEntity: Collidable, wallEntity: Collidable) {
+  const collidable = collidableEntity.position
+  const wall = wallEntity.position
+  const collidableSize = collidableEntity.dimensions
+  const wallSize = wallEntity.dimensions
 
   const collidableRight = collidable.x + collidableSize.width
   const collidableBottom = collidable.y + collidableSize.height
@@ -27,14 +23,14 @@ export function separateFromWall(collidableComponent: CollidableComponents, wall
   if (minOverlapX < minOverlapY) {
     collidable.x += overlapLeft < overlapRight ? -overlapLeft : overlapRight
 
-    if (collidableComponent.velocity) {
-      collidableComponent.velocity.x = 0
+    if (collidableEntity.velocity) {
+      collidableEntity.velocity.x = 0
     }
   } else {
     collidable.y += overlapTop < overlapBottom ? -overlapTop : overlapBottom
 
-    if (collidableComponent.velocity) {
-      collidableComponent.velocity.y = 0
+    if (collidableEntity.velocity) {
+      collidableEntity.velocity.y = 0
     }
   }
 }

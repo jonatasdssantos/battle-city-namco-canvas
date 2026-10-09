@@ -1,5 +1,7 @@
-import { World } from "../libs/ecs/world";
+import { World } from "miniplex";
 import mitt from "../libs/emitter";
+
+import type { Dimensions, EnemyLevel, Entity, GameWorld, PowerUpType, Vector } from "../components";
 
 // Systems
 import { 
@@ -10,32 +12,28 @@ import {
   PowerUpSystem
 } from './systems';
 
-
-export const PLAYER_ENTITY = 'player_1'
-
-//*
-// Todo: implement components as struct data types, instead of playing with strings with objects
-// Todo: implement the entity handlers as a separate class, so we can easily add more entities to the world
-//  */
-
 export type EmitterEvents = {
-  'player.death': { playerId: string },
-  'player.hit': { playerId: string },
-  'player.spawn': { playerId: string },
+  'player.death': { player: Entity },
+  'player.hit': { player: Entity },
+  'player.spawn': { player: Entity },
 
-  'enemy.spawn': { enemyId: string },
-  'enemy.hit': { enemyId: string },
-  'enemy.death': { enemyId: string },
+  'enemy.spawn': { enemy: Entity },
+  'enemy.hit': { enemy: Entity },
+  'enemy.death': { enemy: Entity },
 
-  'projectile.spawn': { projectileId: string },
-  'projectile.hit': { projectileId: string, targetId: string },
+  'projectile.spawn': { projectile: Entity },
+  'projectile.hit': { projectile: Entity, target: Entity },
 
-  'powerup.spawn': { powerupId: string },
-  'powerup.hit': { powerupId: string, playerId: string }
-  'powerup.expired': { powerupId: string }
+  'powerup.spawn': { powerup: Entity },
+  'powerup.hit': { powerup: Entity, player: Entity }
+  'powerup.expired': { powerup: Entity }
 }
 
 export const Emitter = mitt<EmitterEvents>()
+
+const ENEMY_HEALTH: Record<EnemyLevel, number> = { '1': 1, '2': 2, '3': 3 }
+
+type System = { execute: (world: GameWorld) => void }
 
 export class App {
 
@@ -43,25 +41,16 @@ export class App {
   declare isRunning: boolean
 
   declare $appEl: HTMLElement
-  declare $playerEl: HTMLElement
-  declare $projectilesEl: HTMLElement[]
-  declare $wallsEl: HTMLElement[]
-  declare $enemiesEl: HTMLElement[]
-  declare $powerupsEl: HTMLElement[]
 
   declare windowMidWidth: number
   declare windowMidHeight: number
   
-  declare world: World
+  declare world: GameWorld
+  declare systems: System[]
+  declare player: Entity
 
   constructor() {
     this.$appEl = document.getElementById('app') as HTMLElement
-    this.$playerEl = document.getElementById('player-debug') as HTMLElement
-    
-    this.$projectilesEl = []
-    this.$wallsEl = []
-    this.$enemiesEl = []
-    this.$powerupsEl = []
 
     this.windowMidWidth = window.innerWidth / 2
     this.windowMidHeight = window.innerHeight / 2
@@ -106,113 +95,117 @@ export class App {
   }
 
   initWorld() {
-    this.world = new World()
+    this.world = new World<Entity>()
 
-    this.world.addSystem('enemiesAI', new EnemiesAISystem())
-    this.world.addSystem('movement', new MovementSystem())
-    this.world.addSystem('projectile', new ProjectileSystem())
-    this.world.addSystem('powerup', new PowerUpSystem())
-    this.world.addSystem('collision', new CollisionDetectionSystem())
+    this.world.onEntityRemoved.subscribe(entity => entity.sprite?.remove())
+
+    this.systems = [
+      new EnemiesAISystem(),
+      new MovementSystem(),
+      new ProjectileSystem(),
+      new PowerUpSystem(),
+      new CollisionDetectionSystem()
+    ]
   }
 
   //#region Entity Initialization
   initPlayerEntity() {
-    this.world.addEntity(PLAYER_ENTITY, false, ['player', 'movable', 'collidable'])
+    const dimensions = { width: 25, height: 25, depth: 0 }
 
-    this.world.addComponent(PLAYER_ENTITY, 'position', { x: 0, y: 0 })
-    this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 0, y: 0 })
-    this.world.addComponent(PLAYER_ENTITY, 'direction', { x: 0, y: 0 })
-    this.world.addComponent(PLAYER_ENTITY, 'health', { value: 1 })
-    this.world.addComponent(PLAYER_ENTITY, 'dimensions', { width: 25, height: 25, depth: 0 })
-    this.world.addComponent(PLAYER_ENTITY, 'bbox', { width: 25, height: 25, depth: 0 })
-    this.world.addComponent(PLAYER_ENTITY, 'score', { value: 0 })
-    this.world.addComponent(PLAYER_ENTITY, 'powerups', { value: [] as string[] })
+    this.player = this.world.add({
+      player: true,
+      movable: true,
+      collidable: true,
+      position: { x: 0, y: 0 },
+      velocity: { x: 0, y: 0 },
+      direction: { x: 0, y: 0 },
+      health: 1,
+      dimensions,
+      bbox: { ...dimensions },
+      score: 0,
+      powerups: [],
+      sprite: document.getElementById('player-debug') ?? undefined
+    })
   }
 
-  initEnemyEntity(position: { x: number, y: number }, level: '1' | '2' | '3') {
-    const enemyId = this.world.addEntity('enemy', true, ['enemy', 'movable', 'collidable'])
+  initEnemyEntity(position: Vector, level: EnemyLevel) {
+    const dimensions = { width: 20, height: 20, depth: 0 }
 
-    let health = 1
-
-    switch (level) {
-      case '1':
-        health = 1
-        break;
-      case '2':
-        health = 2
-        break;
-      case '3':
-        health = 3
-        break;
-    }
-
-    this.world.addComponent(enemyId, 'position', position)
-    this.world.addComponent(enemyId, 'velocity', { x: 0, y: 0 })
-    this.world.addComponent(enemyId, 'direction', { x: 0, y: 0 })
-    this.world.addComponent(enemyId, 'health', { value: health })
-    this.world.addComponent(enemyId, 'dimensions', { width: 20, height: 20, depth: 0 })
-    this.world.addComponent(enemyId, 'bbox', { width: 20, height: 20, depth: 0 })
-    this.world.addComponent(enemyId, 'level', { value: level })
-    this.world.addComponent(enemyId, 'special', { value: false })
-
-    // WIP
-    this.handleEnemyCreation(enemyId)
+    this.world.add({
+      enemy: true,
+      movable: true,
+      collidable: true,
+      position: { ...position },
+      velocity: { x: 0, y: 0 },
+      direction: { x: 0, y: 0 },
+      health: ENEMY_HEALTH[level],
+      dimensions,
+      bbox: { ...dimensions },
+      level,
+      special: false,
+      sprite: this.createSprite('enemy', position, dimensions)
+    })
   }
 
-  initWallEntity(position: { x: number, y: number }, dimensions: { width: number, height: number, depth: number }) {
-    const wallId = this.world.addEntity('wall', true, ['wall', 'static', 'collidable'])
-
-    this.world.addComponent(wallId, 'position', position)
-    this.world.addComponent(wallId, 'dimensions', dimensions)
-    this.world.addComponent(wallId, 'bbox', dimensions)
-
-    // WIP
-    this.handleWallCreation(wallId)
+  initWallEntity(position: Vector, dimensions: Dimensions) {
+    this.world.add({
+      wall: true,
+      static: true,
+      collidable: true,
+      position: { ...position },
+      dimensions: { ...dimensions },
+      bbox: { ...dimensions },
+      sprite: this.createSprite('wall', position, dimensions)
+    })
   }
 
-  initProjectileEntity( ownerEntityId: string ) {
-    if (!ownerEntityId || !this.world.getEntity(ownerEntityId)) return
-
-    const projectileId = this.world.addEntity('projectile', true, ['projectile', 'movable', 'collidable'])
-    
-    const ownerDirection = this.world.getComponent(ownerEntityId, 'direction')
-    const ownerPosition = this.world.getComponent(ownerEntityId, 'position')
-    const ownerDimensions = this.world.getComponent(ownerEntityId, 'dimensions')
+  initProjectileEntity(owner: Entity) {
+    if (!this.world.has(owner) || !owner.position || !owner.direction || !owner.dimensions) return
 
     const dimensions = { width: 10, height: 10, depth: 0 }
 
-    const middlePosX = (ownerDimensions.width / 2) + (dimensions.width / 2)
-    const middlePosY = (ownerDimensions.height / 2) + (dimensions.height / 2)
+    const middlePosX = (owner.dimensions.width / 2) + (dimensions.width / 2)
+    const middlePosY = (owner.dimensions.height / 2) + (dimensions.height / 2)
 
-    this.world.addComponent(projectileId, 'position', { x: ownerPosition.x + middlePosX, y: ownerPosition.y + middlePosY })
-    this.world.addComponent(projectileId, 'velocity', { x: 5, y: 5 })
-    this.world.addComponent(projectileId, 'direction', { x: ownerDirection.x, y: ownerDirection.y })
-    this.world.addComponent(projectileId, 'dimensions', dimensions)
-    this.world.addComponent(projectileId, 'bbox', dimensions)
-    this.world.addComponent(projectileId, 'damage', { value: 1 })
-    this.world.addComponent(projectileId, 'owner', { value: ownerEntityId })
+    const position = { x: owner.position.x + middlePosX, y: owner.position.y + middlePosY }
 
-    // WIP
-    this.handleProjectileCreation(projectileId)
+    this.world.add({
+      projectile: true,
+      movable: true,
+      collidable: true,
+      position,
+      velocity: { x: 5, y: 5 },
+      direction: { ...owner.direction },
+      dimensions,
+      bbox: { ...dimensions },
+      damage: 1,
+      owner,
+      sprite: this.createSprite('projectile', position, dimensions)
+    })
   }
 
-  initPowerupEntity(position: { x: number, y: number }, type: 'health' | 'speed' | 'shield') {
-    const powerupId = this.world.addEntity('powerup', true, ['powerup', 'static', 'collidable'])
+  initPowerupEntity(position: Vector, type: PowerUpType) {
+    const dimensions = { width: 10, height: 10, depth: 0 }
 
-    let pos = PowerUpSystem.findAvailablePosition(position, { width: 10, height: 10 }, this.world)
+    const pos = PowerUpSystem.findAvailablePosition(position, dimensions, this.world)
 
-    this.world.addComponent(powerupId, 'position', pos)
-    this.world.addComponent(powerupId, 'dimensions', { width: 10, height: 10, depth: 0 })
-    this.world.addComponent(powerupId, 'bbox', { width: 10, height: 10, depth: 0 })
-    this.world.addComponent(powerupId, 'type', { value: type })
-    this.world.addComponent(powerupId, 'durationOnMap', { value: 10 })
-    this.world.addComponent(powerupId, 'expired', { value: false })
-    this.world.addComponent(powerupId, 'pickedUp', { value: false })
-    this.world.addComponent(powerupId, 'activated', { value: false })
-    this.world.addComponent(powerupId, 'owner', { value: null as string | null })
+    if (!pos) return
 
-    // WIP
-    this.handlePowerupCreation(powerupId)
+    this.world.add({
+      powerup: true,
+      static: true,
+      collidable: true,
+      position: pos,
+      dimensions,
+      bbox: { ...dimensions },
+      powerupType: type,
+      durationOnMap: 10,
+      expired: false,
+      pickedUp: false,
+      activated: false,
+      owner: null,
+      sprite: this.createSprite('powerup', pos, dimensions)
+    })
   }
   //#endregion
 
@@ -223,125 +216,76 @@ export class App {
   }
 
   keyDownHandler(event: KeyboardEvent) {
+    const { velocity } = this.player
+
+    if (!velocity) return
+
     switch (event.code) {
       case 'ArrowLeft':
-        this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: -3})
-        this.world.addComponent(PLAYER_ENTITY, 'direction', { x: -1, y: 0 })
+        velocity.x = -3
+        this.player.direction = { x: -1, y: 0 }
         break
       case 'ArrowRight':
-        this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 3})
-        this.world.addComponent(PLAYER_ENTITY, 'direction', { x: 1, y: 0 })
+        velocity.x = 3
+        this.player.direction = { x: 1, y: 0 }
         break
       case 'ArrowUp':
-        this.world.addComponent(PLAYER_ENTITY, 'velocity', { y: -3 })
-        this.world.addComponent(PLAYER_ENTITY, 'direction', { x: 0, y: -1 })
+        velocity.y = -3
+        this.player.direction = { x: 0, y: -1 }
         break
       case 'ArrowDown':
-        this.world.addComponent(PLAYER_ENTITY, 'velocity', { y: 3 })
-        this.world.addComponent(PLAYER_ENTITY, 'direction', { x: 0, y: 1 })
+        velocity.y = 3
+        this.player.direction = { x: 0, y: 1 }
         break
       case 'Space':
-        this.initProjectileEntity(PLAYER_ENTITY)
+        this.initProjectileEntity(this.player)
         break
     }
   }
 
   keyUpHandler(event: KeyboardEvent) {
+    const { velocity } = this.player
+
+    if (!velocity) return
+
     switch (event.key) {
       case 'ArrowLeft':
       case 'ArrowRight':
-        this.world.addComponent(PLAYER_ENTITY, 'velocity', { x: 0 })
+        velocity.x = 0
         break
       case 'ArrowUp':
       case 'ArrowDown':
-        this.world.addComponent(PLAYER_ENTITY, 'velocity', { y: 0 })
+        velocity.y = 0
         break
     }
   }
   //#endregion
 
   //#region Handlers
-  handleProjectileCreation(projectileId: string) {
-    const projectilePosition = this.world.getComponent(projectileId, 'position')
-    const projectileDimensions = this.world.getComponent(projectileId, 'dimensions')
+  createSprite(className: string, position: Vector, dimensions: Dimensions) {
+    const $el = document.createElement('div')
+    $el.className = className
+    $el.style.transform = `translate3d(${position.x}px, ${position.y}px, 0)`
+    $el.style.width = `${dimensions.width}px`
+    $el.style.height = `${dimensions.height}px`
 
-    const $projectileEl = document.createElement('div')
-    $projectileEl.id = projectileId
-    $projectileEl.className = 'projectile'
-    $projectileEl.style.transform = `translate3d(${projectilePosition.x}px, ${projectilePosition.y}px, 0)`
-    $projectileEl.style.width = `${projectileDimensions.width}px`
-    $projectileEl.style.height = `${projectileDimensions.height}px`
-  
-    this.$appEl.appendChild($projectileEl)
-    this.$projectilesEl.push($projectileEl)
-  }
+    this.$appEl.appendChild($el)
 
-  handleWallCreation(wallId: string) {
-    const wallPosition = this.world.getComponent(wallId, 'position')
-    const wallDimensions = this.world.getComponent(wallId, 'dimensions')
-
-    const $wallEl = document.createElement('div')
-    $wallEl.id = wallId
-    $wallEl.className = 'wall'
-    $wallEl.style.transform = `translate3d(${wallPosition.x}px, ${wallPosition.y}px, 0)`
-    $wallEl.style.width = `${wallDimensions.width}px`
-    $wallEl.style.height = `${wallDimensions.height}px`
-
-    this.$appEl.appendChild($wallEl)
-    this.$wallsEl.push($wallEl)
-  }
-
-  handleEnemyCreation(enemyId: string) {
-    const enemyPosition = this.world.getComponent(enemyId, 'position')
-    const enemyDimensions = this.world.getComponent(enemyId, 'dimensions')
-
-    const $enemyEl = document.createElement('div')
-    $enemyEl.id = enemyId
-    $enemyEl.className = 'enemy'
-    $enemyEl.style.transform = `translate3d(${enemyPosition.x}px, ${enemyPosition.y}px, 0)`
-    $enemyEl.style.width = `${enemyDimensions.width}px`
-    $enemyEl.style.height = `${enemyDimensions.height}px`
-
-    this.$appEl.appendChild($enemyEl)
-    this.$enemiesEl.push($enemyEl)
+    return $el
   }
 
   handleEnemyShooting() {
-    this.world.getEntitiesByTag('enemy').forEach(enemy => {
-      const shooting = this.world.getComponent(enemy.id, 'shooting')
+    for (const enemy of this.world.with('enemy', 'shootRequested')) {
+      this.initProjectileEntity(enemy)
 
-      if (!shooting?.requested) return
-
-      this.initProjectileEntity(enemy.id)
-
-      shooting.requested = false
-    })
+      this.world.removeComponent(enemy, 'shootRequested')
+    }
   }
 
-  handleExpiredProjectiles() {
-    this.$projectilesEl = this.$projectilesEl.filter($projectileEl => {
-      if (!this.world.getComponent($projectileEl.id, 'expired')) return true
-
-      $projectileEl.remove()
-      this.world.removeEntity($projectileEl.id)
-
-      return false
-    })
-  }
-
-  handlePowerupCreation(powerupId: string) {
-    const powerupPosition = this.world.getComponent(powerupId, 'position')
-    const powerupDimensions = this.world.getComponent(powerupId, 'dimensions')
-
-    const $powerupEl = document.createElement('div')
-    $powerupEl.id = powerupId
-    $powerupEl.className = 'powerup'
-    $powerupEl.style.transform = `translate3d(${powerupPosition.x}px, ${powerupPosition.y}px, 0)`
-    $powerupEl.style.width = `${powerupDimensions.width}px`
-    $powerupEl.style.height = `${powerupDimensions.height}px`
-
-    this.$appEl.appendChild($powerupEl)
-    this.$powerupsEl.push($powerupEl)
+  renderSprites() {
+    for (const { sprite, position } of this.world.with('sprite', 'position')) {
+      sprite.style.transform = `translate3d(${position.x}px, ${position.y}px, 0)`
+    }
   }
   //#endregion
 
@@ -349,38 +293,25 @@ export class App {
   observeEnemyDeathHandler(event: EmitterEvents['enemy.death']) {
     console.log('enemy death', event)
 
-    this.world.addComponent(PLAYER_ENTITY, 'score', { value: this.world.getComponent(PLAYER_ENTITY, 'score').value + 100 }) // WIP
-
-    this.$enemiesEl.find($enemyEl => $enemyEl.id === event.enemyId)?.remove()
-    this.$enemiesEl = this.$enemiesEl.filter($enemyEl => $enemyEl.id !== event.enemyId)
+    this.player.score = (this.player.score ?? 0) + 100 // WIP
   }
 
   observeProjectileHitHandler(event: EmitterEvents['projectile.hit']) {
     console.log('projectile hit', event)
-
-    this.$projectilesEl.find($projectileEl => $projectileEl.id === event.projectileId)?.remove()
-    this.$projectilesEl = this.$projectilesEl.filter($projectileEl => $projectileEl.id !== event.projectileId)
   }
 
   observePlayerDeathHandler(event: EmitterEvents['player.death']) {
-    this.$playerEl.remove()
-    this.$playerEl = null
+    console.log('player death', event)
   }
 
   observePowerupHandler(event: EmitterEvents['powerup.hit']) {
     console.log('powerup hit', event)
 
-    this.world.addComponent(PLAYER_ENTITY, 'score', { value: this.world.getComponent(PLAYER_ENTITY, 'score').value + 250 }) // WIP
-
-    this.$powerupsEl.find($powerupEl => $powerupEl.id === event.powerupId)?.remove()
-    this.$powerupsEl = this.$powerupsEl.filter($powerupEl => $powerupEl.id !== event.powerupId)
+    this.player.score = (this.player.score ?? 0) + 250 // WIP
   }
 
   observePowerupExpiredHandler(event: EmitterEvents['powerup.expired']) {
     console.log('powerup expired event', event)
-
-    this.$powerupsEl.find($powerupEl => $powerupEl.id === event.powerupId)?.remove()
-    this.$powerupsEl = this.$powerupsEl.filter($powerupEl => $powerupEl.id !== event.powerupId)
   }
   //#endregion
 
@@ -394,28 +325,10 @@ export class App {
 
   update() {
     if (this.isRunning && this.isReady) {
-      this.world.update()
+      this.systems.forEach(system => system.execute(this.world))
 
-      // Update Player Debug
-      const playerPosition = this.world.getComponent(PLAYER_ENTITY, 'position')
-      if (this.$playerEl && playerPosition) {
-        this.$playerEl.style.transform = `translate3d(${playerPosition.x}px, ${playerPosition.y}px, 0)`
-      }
-
-      // Update Enemies
-      this.$enemiesEl.forEach(enemyEl => {
-        const enemyPosition = this.world.getComponent(enemyEl.id, 'position')
-        enemyEl.style.transform = `translate3d(${enemyPosition.x}px, ${enemyPosition.y}px, 0)`
-      })
-
-      // Update Projectiles
-      this.$projectilesEl.forEach(projectileEl => {
-        const projectilePosition = this.world.getComponent(projectileEl.id, 'position')
-        projectileEl.style.transform = `translate3d(${projectilePosition.x}px, ${projectilePosition.y}px, 0)`
-      })
-
+      this.renderSprites()
       this.handleEnemyShooting()
-      this.handleExpiredProjectiles()
     }
   }
 }

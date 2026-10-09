@@ -1,76 +1,48 @@
-import type { EntityId } from "../../../libs/ecs/entity"
-import type { World } from "../../../libs/ecs/world"
-
-import type { CollidableComponents } from "./wallSeparation"
+import type { Collidable, Entity, GameWorld } from "../../../components"
 
 import { Emitter } from "../../app"
 
 export class CollisionProjectileResolver {
-  static removeProjectile(projectileId: EntityId, world?: World) {
-    world?.removeComponent(projectileId.toString(), 'collidable')
-    world?.removeEntity(projectileId.toString())
+  static reduceEntityHealth(entity: Entity, damage: number) {
+    entity.health = Math.max((entity.health ?? 0) - damage, 0)
+
+    return entity.health
   }
 
-  static removeCollidable(otherCollidableId: EntityId, world?: World) {
-    world?.removeComponent(otherCollidableId.toString(), 'collidable')
-    world?.removeEntity(otherCollidableId.toString())
-  }
-
-  static reduceEntityHealth(entityId: EntityId, damage: number, world?: World) {
-    const entityHealth = world?.getComponent(entityId.toString(), 'health')?.value ?? 0
-    const newHealth = Math.max(entityHealth - damage, 0)
-    world?.addComponent(entityId.toString(), 'health', { value: newHealth })
-
-    return newHealth
-  }
-
-  static resolve(
-    projectileId: EntityId,
-    _projectileComponent: CollidableComponents,
-    otherCollidableId: EntityId,
-    _otherCollidableComponent: CollidableComponents,
-    otherTags: string[] = [], 
-    world?: World
-  ) {
+  static resolve(projectile: Collidable, other: Collidable, world: GameWorld) {
     //** Prevent projectile from colliding with its own owner */
-    if (_projectileComponent.owner.value === otherCollidableId) return;
+    if (projectile.owner === other) return
 
-    if (otherTags.includes('enemy') && !_projectileComponent.owner.value.match(/enemy/i)) {
-      this.removeProjectile(projectileId, world)
+    const damage = projectile.damage ?? 0
 
-      Emitter.emit('enemy.hit', { enemyId: otherCollidableId.toString() })
-      Emitter.emit('projectile.hit', { projectileId: projectileId.toString(), targetId: otherCollidableId.toString() })
-    
-      const projectileDamage = _projectileComponent.damage.value
-      const newHealth = this.reduceEntityHealth(otherCollidableId, projectileDamage, world)
+    if (other.enemy && !projectile.owner?.enemy) {
+      world.remove(projectile)
 
-      if (newHealth <= 0) {
-        Emitter.emit('enemy.death', { enemyId: otherCollidableId.toString() })
-        this.removeCollidable(otherCollidableId, world)
+      Emitter.emit('enemy.hit', { enemy: other })
+      Emitter.emit('projectile.hit', { projectile, target: other })
+
+      if (this.reduceEntityHealth(other, damage) <= 0) {
+        Emitter.emit('enemy.death', { enemy: other })
+        world.remove(other)
       }
     }
 
-    if (otherTags.includes('player')) {
-      this.removeProjectile(projectileId, world)
+    if (other.player) {
+      world.remove(projectile)
 
-      Emitter.emit('player.hit', { playerId: otherCollidableId.toString() })
-      Emitter.emit('projectile.hit', { projectileId: projectileId.toString(), targetId: otherCollidableId.toString() })
-    
-      const projectileDamage = _projectileComponent.damage.value
-      const newHealth = this.reduceEntityHealth(otherCollidableId, projectileDamage, world)
+      Emitter.emit('player.hit', { player: other })
+      Emitter.emit('projectile.hit', { projectile, target: other })
 
-      if (newHealth <= 0) {
-        Emitter.emit('player.death', { playerId: otherCollidableId.toString() })
-        this.removeCollidable(otherCollidableId, world)
+      if (this.reduceEntityHealth(other, damage) <= 0) {
+        Emitter.emit('player.death', { player: other })
+        world.remove(other)
       }
     }
 
-    if (otherTags.includes('wall')) {
-      world?.removeComponent(projectileId.toString(), 'collidable')
+    if (other.wall) {
+      world.remove(projectile)
 
-      world?.removeEntity(projectileId.toString())
-
-      Emitter.emit('projectile.hit', { projectileId: projectileId.toString(), targetId: otherCollidableId.toString() })
+      Emitter.emit('projectile.hit', { projectile, target: other })
     }
   }
 }
